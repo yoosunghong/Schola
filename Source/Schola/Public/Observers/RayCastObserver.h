@@ -3,6 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "DrawDebugHelpers.h"
+#include "Engine/HitResult.h"
 #include "Common/LogSchola.h"
 #include "Observers/AbstractObservers.h"
 #include "RayCastObserver.generated.h"

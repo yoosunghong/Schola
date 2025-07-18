@@ -155,3 +155,22 @@ void UAbstractGymConnector::UpdateEnvironments(FTrainingStateUpdate& StateUpdate
 		}
 	}
 }
+
+void UAbstractGymConnector::SameStepAutoReset()
+{
+	this->ResetCompletedEnvironments();
+}
+
+void UAbstractGymConnector::AutoReset()
+{	
+	EAutoResetType AutoResetType = this->GetAutoResetType();
+
+	if (AutoResetType == EAutoResetType::SameStep)
+	{
+		this->SameStepAutoReset();
+	}
+	else if (AutoResetType == EAutoResetType::NextStep)
+	{
+		UE_LOG(LogSchola, Warning, TEXT("EAutoResetType::NextStep not supported. Using Default AutoReset"));
+	}
+}

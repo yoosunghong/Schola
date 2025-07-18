@@ -6,7 +6,7 @@ Implementation of stable_baselines3.common.vec_env.VecEnv backed by a Schola Env
 
 from collections import OrderedDict
 from typing import Dict, List, Optional, Tuple, TypeVar, Union
-from schola.core.env import ScholaEnv
+from schola.core.env import AutoResetType, ScholaEnv
 from stable_baselines3.common.vec_env import VecEnv as Sb3VecEnv
 from stable_baselines3.common.vec_env.subproc_vec_env import _flatten_obs
 
@@ -27,6 +27,7 @@ class VecEnv(Sb3VecEnv):
         self._env = ScholaEnv(
             unreal_connection,
             verbosity,
+            auto_reset_type=AutoResetType.SAME_STEP,
         )
         self.id_manager = IdManager(self._env.ids)
         # we just use the default UID to get the shared definition

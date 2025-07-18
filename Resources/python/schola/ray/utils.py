@@ -41,7 +41,14 @@ from ray.rllib.utils.spaces.space_utils import (
     get_dummy_batch_for_space,
 )
 from ray.rllib.models.modelv2 import restore_original_dimensions
-
+import gymnasium as gym
+from gymnasium import spaces 
+import numpy as np
+import copy
+from schola.core.env import EnvAgentIdDict
+from ray.rllib.env.base_env import BaseEnv as RayBaseEnv
+from schola.ray.env import BaseEnv
+from typing import Any, List, Optional, Tuple, Dict, Union
 
 @singledispatch
 def export_onnx_from_policy(arg, path: str, policy_name=None):
@@ -188,3 +195,149 @@ class RLLibScholaModel(ScholaModel):
             output_names=output_names,
             dynamic_axes={k: {0: "batch_size"} for k in input_names},
         )
+
+class MultiAgentTransposeImageWrapper(RayBaseEnv):
+    def __init__(self, env: BaseEnv):
+        """
+        A wrapper for transposing image observations in a multi-agent environment.
+
+        Parameters
+        ----------
+        env : BaseEnv
+            The base environment to wrap.
+        """
+        self.env = env
+        original_space = env.observation_space
+        if not isinstance(original_space, spaces.Dict):
+            raise ValueError(
+                f"MultiAgentTransposeImageWrapper expected a gymnasium.spaces.Dict observation space, "
+                f"but got {type(original_space)}."
+            )
+
+        # Detect image keys for each agent
+        self.image_keys = {}
+        for agent_id, agent_space in original_space.spaces.items():
+            if isinstance(agent_space, spaces.Dict):
+                for key, space in agent_space.spaces.items():
+                    if isinstance(space, spaces.Box) and len(space.shape) == 3:
+                        self.image_keys[agent_id] = key
+                        break
+
+        if not self.image_keys:
+            self._observation_space = env.observation_space
+            return
+
+        # Update the observation space for each agent
+        new_spaces = original_space.spaces.copy()
+        for agent_id, image_key in self.image_keys.items():
+            agent_space = new_spaces[agent_id]
+            image_obs_space = agent_space.spaces[image_key]
+
+            # Original image shape is assumed to be (C, H, W)
+            c, h, w = image_obs_space.shape
+            new_image_shape = (h, w, c)
+
+            low = image_obs_space.low
+            high = image_obs_space.high
+
+            # Transpose low/high bounds if they are full-shaped arrays (C, H, W)
+            if isinstance(low, np.ndarray) and low.shape == (c, h, w):
+                low = np.transpose(low, (1, 2, 0))
+            if isinstance(high, np.ndarray) and high.shape == (c, h, w):
+                high = np.transpose(high, (1, 2, 0))
+
+            new_image_box_space = spaces.Box(
+                low=low,
+                high=high,
+                shape=new_image_shape,
+                dtype=image_obs_space.dtype
+            )
+
+            # Update the agent's observation space
+            agent_space.spaces[image_key] = new_image_box_space
+
+        # Store the modified observation space
+        self._observation_space = spaces.Dict(new_spaces)
+
+    def _transpose_observations(self, observations):
+        """
+        Transpose image observations for all agents in all environments.
+
+        Parameters
+        ----------
+        observations : Dict
+            The raw observations from the environment, structured as {env_id: {agent_id: {observation_key: value}}}.
+
+        Returns
+        -------
+        Dict
+            The transposed observations with the same structure.
+        """
+    
+        # Create a deep copy once
+        new_observations = copy.deepcopy(observations)
+    
+        # Perform the transpositions in-place on the copied structure
+        for env_id in new_observations:
+            for agent_id, agent_obs in new_observations[env_id].items():
+                if agent_id in self.image_keys:
+                    image_key = self.image_keys[agent_id]
+                    # Check if the image key exists in this agent's observations
+                    if image_key in agent_obs:
+                        # Transpose the image observation from (C,H,W) to (H,W,C)
+                        agent_obs[image_key] = np.transpose(agent_obs[image_key], (1, 2, 0))
+    
+        return new_observations
+
+    @property
+    def observation_space(self):
+        """Return the modified observation space with transposed image shapes."""
+        return self._observation_space
+        
+    @property
+    def action_space(self):
+        """Return the action space of the wrapped environment."""
+        return self.env.action_space
+        
+    @property
+    def unwrapped(self):
+        """Return the unwrapped environment."""
+        return self.env.unwrapped
+    
+    @property
+    def num_envs(self) -> int:
+        """Return the number of environments."""
+        return self.env.num_envs
+
+    def send_actions(self, action_dict: EnvAgentIdDict[Dict[str, Any]]) -> None:
+        """Send actions to the wrapped environment."""
+        self.env.send_actions(action_dict)
+    
+    def try_reset(
+        self,
+        env_id: Optional[int] = None,
+        seed: Optional[Union[List[int], int]] = None,
+        options: Optional[Dict[str, str]] = None,
+    ):
+        """Try to reset the wrapped environment."""
+        obs, infos = self.env.try_reset(env_id, seed, options)
+        return self._transpose_observations(obs), infos
+    
+    def stop(self) -> None:
+        """Stop the wrapped environment."""
+        self.env.stop()
+    
+    def poll(
+        self,
+    ) -> Tuple[
+        EnvAgentIdDict[Dict[str, Any]],
+        EnvAgentIdDict[float],
+        EnvAgentIdDict[bool],
+        EnvAgentIdDict[bool],
+        EnvAgentIdDict[Dict[str, str]],
+        EnvAgentIdDict[Any],
+    ]:
+        """Poll the wrapped environment and transpose the observations."""
+        obs, rewards, terminateds, truncateds, infos, off_policy_actions = self.env.poll()
+        return self._transpose_observations(obs), rewards, terminateds, truncateds, infos, off_policy_actions
+

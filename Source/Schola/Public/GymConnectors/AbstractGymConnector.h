@@ -11,6 +11,7 @@
 #include "Training/DefinitionStructs/TrainingDefinition.h"
 #include "./IGymConnector.h"
 #include "Environment/AbstractEnvironment.h"
+#include "GymConnectors/AutoResetTypeEnum.h"
 #include "AbstractGymConnector.generated.h"
 
 /** Enum class representing the status of the connector. */
@@ -180,4 +181,17 @@ public:
 	 * @param[in] Env A pointer to the environment to be registered.
 	 */
 	void RegisterEnvironment(AAbstractScholaEnvironment* Env);
+
+	// Functions for handling auto-reset modes
+
+	virtual EAutoResetType GetAutoResetType() PURE_VIRTUAL(UAbstractGymConnector::GetAutoResetType, return EAutoResetType::Disabled;);
+
+	/**
+	 * @brief Automatically resets any environments if they are in a terminal state.
+	 */
+	void SameStepAutoReset();
+
+	
+	virtual void AutoReset() override;
+
 };

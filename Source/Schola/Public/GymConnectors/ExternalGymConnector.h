@@ -45,4 +45,5 @@ public:
 	void SubmitEnvironmentStates() override;
 
 	FTrainingStateUpdate* ResolveEnvironmentStateUpdate() override;
+
 };

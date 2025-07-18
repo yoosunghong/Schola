@@ -12,6 +12,7 @@
 #include "Communicator/ExchangeRPCBackend.h"
 #include "Communicator/PollingRPCBackend.h"
 #include "Communicator/ComBackendInterface.h"
+#include "GymConnectors/AutoResetTypeEnum.h"
 #include "PythonGymConnector.generated.h"
 
 using Schola::InitialTrainingState;
@@ -33,6 +34,10 @@ struct FStartRequest
 	
 	GENERATED_BODY()
 
+	/** The AutoReset Type Received from Python. */
+	UPROPERTY()
+	EAutoResetType AutoResetType = EAutoResetType::SameStep; // Default to SameStep
+	
 	/**
 	 * @brief Create a new empty FStartRequest.
 	 */
@@ -89,6 +94,9 @@ private:
 	UCommunicationManager* CommunicationManager;
 	// Initialized in Constructor for now
 
+	UPROPERTY()
+	EAutoResetType AutoResetType = EAutoResetType::SameStep; // Default to SameStep
+
 public:
 	/**
 	 * @brief Create a new UPythonGymConnector.
@@ -130,4 +138,8 @@ public:
 	 * @return True if the start request has been received, false otherwise.
 	 */
 	bool CheckForStart() override;
+
+	EAutoResetType GetAutoResetType() override;
+
+
 };

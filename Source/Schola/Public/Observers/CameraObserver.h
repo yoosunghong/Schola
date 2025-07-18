@@ -1,9 +1,10 @@
-// Copyright (c) 2023 Advanced Micro Devices, Inc. All Rights Reserved.
+// Copyright (c) 2023-2025 Advanced Micro Devices, Inc. All Rights Reserved.
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Common/LogSchola.h"
+#include "TextureResource.h"
 #include "Engine/Texture2D.h"  
 #include "RenderUtils.h"
 #include "Engine/TextureRenderTarget2D.h"

@@ -1,6 +1,7 @@
 // Copyright (c) 2023-2024 Advanced Micro Devices, Inc. All Rights Reserved.
 
 #pragma once
+
 #include "Common/Points/Point.h"
 #include "Common/Points/PointVariant.h"
 #include "DictPoint.generated.h"

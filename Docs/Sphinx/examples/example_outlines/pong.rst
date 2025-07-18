@@ -6,7 +6,7 @@ The Pong environment features two agents playing a collaborative game of pong. T
 .. csv-table::
     
     "Num Agents", "2"
-    "Observation Space", "DictSpace({'Camera_SCS_SceneColorHDR_RTF_RGBA8_R_W16_H16': make_camera_space(64,64,num_channels=1)})"
+    "Observation Space", "DictSpace({'Camera_SCS_SceneColorHDR_RTF_RGBA8_R_W16_H16': make_camera_space(16,16,num_channels=1)})"
     "Action Space", "DictSpace({'Teleport_Y_50,00': DiscreteSpace(3)})"
     "Num Vectorized Copies", "2"
 

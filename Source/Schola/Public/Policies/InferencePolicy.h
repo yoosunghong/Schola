@@ -3,12 +3,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Policies/AbstractPolicy.h"
+#include "Async/Async.h"
+#include "Async/TaskGraphInterfaces.h"
 #include "NNE.h"
 #include "NNERuntimeCPU.h"
 #include "NNERuntimeGPU.h"
 #include "NNEModelData.h"
 #include "NNERuntimeRunSync.h"
+#include "Policies/AbstractPolicy.h"
 #include "Common/InteractionDefinition.h"
 #include "Agent/AgentAction.h"
 #include "Common/LogSchola.h"

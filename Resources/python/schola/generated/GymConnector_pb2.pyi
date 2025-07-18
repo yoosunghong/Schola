@@ -9,8 +9,11 @@ from typing import ClassVar as _ClassVar, Mapping as _Mapping, Optional as _Opti
 
 CLOSED: CommunicatorStatus
 DESCRIPTOR: _descriptor.FileDescriptor
+DISABLED: AutoResetType
 ERROR: CommunicatorStatus
 GOOD: CommunicatorStatus
+NEXTSTEP: AutoResetType
+SAMESTEP: AutoResetType
 
 class EnvironmentReset(_message.Message):
     __slots__ = ["options", "seed"]
@@ -36,8 +39,10 @@ class EnvironmentStateUpdate(_message.Message):
     def __init__(self, reset: _Optional[_Union[EnvironmentReset, _Mapping]] = ..., step: _Optional[_Union[_StateUpdates_pb2.EnvironmentStep, _Mapping]] = ...) -> None: ...
 
 class GymConnectorStartRequest(_message.Message):
-    __slots__ = []
-    def __init__(self) -> None: ...
+    __slots__ = ["autoreset_type"]
+    AUTORESET_TYPE_FIELD_NUMBER: _ClassVar[int]
+    autoreset_type: AutoResetType
+    def __init__(self, autoreset_type: _Optional[_Union[AutoResetType, str]] = ...) -> None: ...
 
 class GymConnectorStartResponse(_message.Message):
     __slots__ = []
@@ -80,4 +85,7 @@ class TrainingStateUpdate(_message.Message):
     def __init__(self, updates: _Optional[_Mapping[int, EnvironmentStateUpdate]] = ..., status: _Optional[_Union[CommunicatorStatus, str]] = ...) -> None: ...
 
 class CommunicatorStatus(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
+    __slots__ = []
+
+class AutoResetType(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     __slots__ = []

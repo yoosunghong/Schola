@@ -17,6 +17,20 @@ from typing import Any, List, Dict, Optional, Tuple, Union, TypeVar
 
 
 T = TypeVar("T")
+import sys
+
+if sys.version_info >= (3, 11):
+    from enum import StrEnum
+else:
+    from backports.strenum import StrEnum
+
+class AutoResetType(StrEnum):
+    """
+    Enum for Auto Reset Types.
+    """
+    DISABLED = "Disabled"
+    SAME_STEP = "SameStep"
+    NEXT_STEP = "NextStep"
 
 # A Dictionary, with EnvIds as keys and a Dictionary of AgentIds to some TypeVar as Value.
 EnvAgentIdDict = Dict[int,Dict[int,T]]
@@ -33,6 +47,8 @@ class ScholaEnv:
         The verbosity level for the environment.
     environment_start_timeout : int, default=45
         The time to wait for the environment to start in seconds.
+    auto_reset_type : AutoResetType, default=AutoResetType.SAME_STEP
+        The type of auto-reset for the environment. See Gymnasium for more details on the different modes. Only Disabled, and SameStep are currently supported.
     
     Attributes
     ----------
@@ -66,6 +82,7 @@ class ScholaEnv:
         unreal_connection : UnrealConnection,
         verbosity:int=0,
         environment_start_timeout:int = 45,
+        auto_reset_type : AutoResetType = AutoResetType.SAME_STEP,
     ):
 
         log_level = logging.WARNING
@@ -83,8 +100,14 @@ class ScholaEnv:
         atexit.register(self.close)
         self.gym_stub : gym_grpc.GymServiceStub = self.unreal_connection.connect_stubs(gym_grpc.GymServiceStub)[0]
         
-        #Server might be booting up if we have a standalone connection, so we wait for 15 to verify
+        #Server might be booting up if we have a standalone connection, so we wait for 45 to verify
         start_msg = gym_communication.GymConnectorStartRequest()
+        if(auto_reset_type == AutoResetType.DISABLED):
+            start_msg.autoreset_type = gym_communication.DISABLED
+        elif(auto_reset_type == AutoResetType.SAME_STEP):
+            start_msg.autoreset_type = gym_communication.SAMESTEP
+        elif(auto_reset_type == AutoResetType.NEXT_STEP):
+            start_msg.autoreset_type = gym_communication.NEXTSTEP
         self.gym_stub.StartGymConnector(start_msg, timeout=environment_start_timeout, wait_for_ready=True)
         
         logging.info("requesting environment definition")

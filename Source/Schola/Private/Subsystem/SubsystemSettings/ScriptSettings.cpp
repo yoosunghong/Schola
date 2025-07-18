@@ -1,6 +1,7 @@
 // Copyright (c) 2024-2025 Advanced Micro Devices, Inc. All Rights Reserved.
 
 #pragma once
+
 #include "Subsystem/SubsystemSettings/ScriptSettings.h"
 
 inline FString WithQuotes(FString Input)

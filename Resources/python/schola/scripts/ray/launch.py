@@ -9,6 +9,7 @@ from typing import Any, Dict, Type, Union
 import traceback
 
 from schola.ray.env import BaseEnv
+from schola.ray.utils import MultiAgentTransposeImageWrapper
 from schola.core.env import ScholaEnv
 from schola.core.utils import get_plugins
 
@@ -166,6 +167,7 @@ def main(args: RLlibScriptArgs) -> tune.ExperimentAnalysis:
 
     def env_creator(env_config):
         env = BaseEnv(args.make_unreal_connection(), verbosity=args.logging_settings.schola_verbosity)
+        env = MultiAgentTransposeImageWrapper(env)
         return env
 
     def policy_mapping_fn(agent_id, episode=None, worker=None, **kwargs):

@@ -1,8 +1,10 @@
-// Copyright (c) 2023 Advanced Micro Devices, Inc. All Rights Reserved.
+// Copyright (c) 2023-2025 Advanced Micro Devices, Inc. All Rights Reserved.
 
 #pragma once
 
 #include "CoreMinimal.h"
+#include "HAL/Runnable.h"
+#include "HAL/RunnableThread.h"
 #include "./CallData.h"
 #include "./AbstractRPCBackend.h"
 #include "./ComBackendInterface.h"

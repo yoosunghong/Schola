@@ -1,4 +1,4 @@
-// Copyright (c) 2023 Advanced Micro Devices, Inc. All Rights Reserved.
+// Copyright (c) 2023-2025 Advanced Micro Devices, Inc. All Rights Reserved.
 
 #include "Subsystem/ScholaManagerSubsystem.h"
 
@@ -38,10 +38,11 @@ void UScholaManagerSubsystem::Tick(float DeltaTime)
 			}
 		}
 
-		// Reset the environments, if the policy said so
+		// Reset the environments, if the environment received a reset request
 		// Do it after we take inference actions so that if they are linked to the envs they get reset properly
 		if (this->GymConnector != nullptr && this->GymConnector->IsRunning())
 		{
+			
 			this->GymConnector->ResetCompletedEnvironments();
 		}
 	}
@@ -51,16 +52,16 @@ void UScholaManagerSubsystem::Tick(float DeltaTime)
 		TRACE_CPUPROFILER_EVENT_SCOPE_STR("Schola: Agents Thinking");
 		if (this->GymConnector && this->GymConnector->IsRunning())
 		{
+			
 			this->GymConnector->CollectEnvironmentStates();
 			this->GymConnector->SubmitEnvironmentStates();
 		}
-		//this->InferenceAgentsThink();
 	}
 
 	// self-Reset Phase if we have already run for 1+ steps
 	if (this->GymConnector && !bFirstStep && this->GymConnector->IsRunning())
 	{
-		this->GymConnector->ResetCompletedEnvironments();
+		this->GymConnector->AutoReset();
 	}
 
 	bFirstStep = false;
@@ -85,7 +86,7 @@ void UScholaManagerSubsystem::PrepareSubsystem()
 	// Don't generate a new gym connector if it doesn't exist
 	if (*ScholaSettings->GymConnectorClass != nullptr)
 	{
-		this->GymConnector = NewObject<UAbstractGymConnector>(this, ScholaSettings->GymConnectorClass, FName("GymConnector"));
+		this->GymConnector = NewObject<UAbstractGymConnector>(this, (UClass*) ScholaSettings->GymConnectorClass, FName("GymConnector"));
 		this->GymConnector->Init();
 	}
 

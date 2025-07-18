@@ -2,9 +2,10 @@
 
 #pragma once
 
+#include "CoreMinimal.h"
+#include "Misc/CommandLine.h"
 #include "Environment/AbstractEnvironment.h"
 #include "Common/LogSchola.h"
-#include "CoreMinimal.h"
 #include "Communicator/CommunicationManager.h"
 #include "Agent/AgentAction.h"
 #include "Training/AbstractTrainer.h"

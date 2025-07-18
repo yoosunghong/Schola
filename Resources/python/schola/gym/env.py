@@ -4,9 +4,9 @@
 Implementation of gym.vector.VectorEnv backed by a Schola Environment.
 """
 
-from typing import Dict, List, Tuple, TypeVar, Union
+from typing import Dict, List, Optional, Tuple, TypeVar, Union
 from schola.core.unreal_connections import UnrealConnection
-from schola.core.env import ScholaEnv
+from schola.core.env import AutoResetType, ScholaEnv
 from schola.core.error_manager import EnvironmentException
 import numpy as np
 import gymnasium as gym
@@ -15,6 +15,47 @@ from schola.core.utils import nested_get, IdManager
 import logging
 
 T = TypeVar("T")
+
+class GymEnv(gym.Env):
+
+    def __init__(self, 
+                 unreal_connection: UnrealConnection,
+                 verbosity: int = 0):
+        
+        self._env = ScholaEnv(
+            unreal_connection,
+            verbosity= verbosity,
+            auto_reset_type=AutoResetType.DISABLED
+        )
+        self.id_manager = IdManager(self._env.ids)
+        
+        self.observation_space = self._env.get_obs_space(env_id=0, agent_id=0)
+        self.action_space = self._env.get_action_space(env_id=0, agent_id=0)
+        try:
+            assert self.id_manager.num_ids == 1, "GymEnv is designed for single-agent non-vectorized environments only. Please use GymVectorEnv for multi-agent or vectorized environments."
+        except Exception as e:
+            self._env.close()
+            raise e
+    
+    def close(self) -> None:
+        """
+        Close the environment and release resources.
+        """
+        super().close()
+        # Close the environment connection
+        return self._env.close()
+
+    def reset(self, seed: Optional[int] = None, options: Optional[Dict[str, str]] = None) -> Tuple[Dict[str, np.ndarray], Dict[int, Dict[str, str]]]:
+        super().reset(seed=seed, options=options)
+        obs, nested_infos = self._env.hard_reset(env_ids=[0],seeds=seed,options=options)
+        return obs[0][0], nested_infos[0][0]
+    
+    def step(self, action: Dict[str, np.ndarray]) -> Tuple[Dict[str, np.ndarray], float, bool, bool, Dict[str, str]]:
+        self._env.send_actions({0: {0:action}})  # Send action for the first (and only) environment
+        observations, rewards, terminateds, truncateds, nested_infos = self._env.poll()
+        observations, rewards, terminated, truncated,infos = observations[0][0], rewards[0][0], terminateds[0][0], truncateds[0][0], nested_infos[0][0]
+        return observations, rewards, terminated, truncated, infos
+
 
 class GymVectorEnv(gym.vector.VectorEnv):
     """
@@ -40,7 +81,9 @@ class GymVectorEnv(gym.vector.VectorEnv):
         self._env = ScholaEnv(
             unreal_connection,
             verbosity,
+            auto_reset_type=AutoResetType.SAME_STEP,
         )
+        
         self.id_manager = IdManager(self._env.ids)
         # we just use the default UID to get the shared definition
         single_obs_space = self._env.get_obs_space(*self.id_manager[0])

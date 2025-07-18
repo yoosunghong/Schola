@@ -27,7 +27,6 @@ def get_test_deps():
 def merge_deps(*dep_lists):
     return list(set(chain.from_iterable(dep_lists)))
 
-
 def get_all_deps():
     return merge_deps(get_sb3_deps(), get_ray_deps())
 
@@ -62,8 +61,9 @@ if __name__ == "__main__":
         install_requires=[
         "protobuf>=3.20",
         "grpcio>=1.51.1",
-        "onnx>=1.11",
-        "gymnasium==0.29.1"
+        "onnx>=1.11, <1.16.2",
+        "gymnasium==0.29.1",
+        "backports.strenum; python_version<'3.11'",
         ],
         extras_require={
             "sb3": get_sb3_deps(), 

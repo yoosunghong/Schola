@@ -1,8 +1,9 @@
-// Copyright (c) 2023 Advanced Micro Devices, Inc. All Rights Reserved.
+// Copyright (c) 2023-2025 Advanced Micro Devices, Inc. All Rights Reserved.
 
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Async/Future.h"
 #include "Common/InteractionDefinition.h"
 #include "Agent/AgentAction.h"
 #include "Common/Spaces.h"

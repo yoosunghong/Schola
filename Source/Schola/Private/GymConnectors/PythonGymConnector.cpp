@@ -78,12 +78,20 @@ void UPythonGymConnector::Enable()
 
 bool UPythonGymConnector::CheckForStart()
 {
-	TOptional<FStartRequest*> ResetRequest = this->StartRequestService->PollAndDeserialize<FStartRequest>();
-	if (ResetRequest.IsSet() || this->Status == EConnectorStatus::Running)
+	TOptional<FStartRequest*> OptionalStartRequest = this->StartRequestService->PollAndDeserialize<FStartRequest>();
+	if (OptionalStartRequest.IsSet())
 	{
+		FStartRequest* StartRequestPtr = OptionalStartRequest.GetValue();
+		this->AutoResetType = StartRequestPtr->AutoResetType;
 		this->SetStatus(EConnectorStatus::Running);
 	}
 	return this->Status == EConnectorStatus::Running;
+}
+
+EAutoResetType UPythonGymConnector::GetAutoResetType()
+{
+	//Log that we got into the function in PythonGymConnector
+	return this->AutoResetType;
 }
 
 FStartRequest::FStartRequest()
@@ -92,7 +100,17 @@ FStartRequest::FStartRequest()
 
 void FStartRequest::FromProto(FStartRequest& EmptyResetRequest, const GymConnectorStartRequest& ProtoMsg)
 {
-	//Do nothing since the message currently contains no information
+	switch (ProtoMsg.autoreset_type())
+	{
+		case (Schola::SAMESTEP):
+			EmptyResetRequest.AutoResetType = EAutoResetType::SameStep;
+			break;
+		case (Schola::NEXTSTEP):
+			EmptyResetRequest.AutoResetType = EAutoResetType::NextStep;
+			break;
+		default:
+			EmptyResetRequest.AutoResetType = EAutoResetType::Disabled;
+	}
 }
 
 FStartRequest::FStartRequest(const GymConnectorStartRequest& ProtoMsg)
@@ -104,3 +122,4 @@ FStartRequest* FStartRequest::FromProto(const GymConnectorStartRequest& ProtoMsg
 {
 	return new FStartRequest(ProtoMsg);
 }
+

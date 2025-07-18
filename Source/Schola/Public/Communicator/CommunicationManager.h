@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Misc/CommandLine.h"
 #include "Common/LogSchola.h"
 #include "Communicator/ComBackendInterface.h"
 #include "Subsystems/GameInstanceSubsystem.h"

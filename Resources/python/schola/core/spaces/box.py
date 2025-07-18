@@ -140,5 +140,5 @@ class BoxSpace(gymnasium.spaces.Box, UnrealSpace):
         return self.low.size
 
     def process_data(self, msg : proto_points.FundamentalPoint) -> np.ndarray:
-        output = np.asarray(msg.box_point.values).reshape(self.shape)
+        output = np.asarray(msg.box_point.values,dtype=np.float32).reshape(self.shape)
         return output

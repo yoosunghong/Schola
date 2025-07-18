@@ -1,10 +1,15 @@
-// Copyright (c) 2023-2024 Advanced Micro Devices, Inc. All Rights Reserved.
+// Copyright (c) 2023-2025 Advanced Micro Devices, Inc. All Rights Reserved.
 
 #pragma once
 
 #include "Common/Points/BoxPoint.h"
 #include "Common/Points/DiscretePoint.h"
 #include "Common/Points/BinaryPoint.h"
+
+// Forward declarations to satisfy include dependency order
+struct FDiscretePoint;
+struct FBinaryPoint;
+struct FBoxPoint;
 
 /**
  * @brief A base class for objects that can operate on any point. This is used to implement the visitor pattern

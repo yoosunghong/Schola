@@ -1,7 +1,9 @@
 // Copyright (c) 2023-2024 Advanced Micro Devices, Inc. All Rights Reserved.
 
 #pragma once
+
 #include "Common/Points/Point.h"
+#include "Common/Points/PointVisitor.h"
 #include "BinaryPoint.generated.h"
 
 

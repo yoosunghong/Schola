@@ -1,4 +1,4 @@
-// Copyright (c) 2023 Advanced Micro Devices, Inc. All Rights Reserved.
+// Copyright (c) 2023-2025 Advanced Micro Devices, Inc. All Rights Reserved.
 
 #include "Observers/RayCastObserver.h"
 
@@ -24,6 +24,7 @@ FBoxSpace URayCastObserver::GetObservationSpace() const
 
 TArray<FVector> URayCastObserver::GenerateRayEndpoints(int32 InNumRays, float InRayDegrees, FVector InBaseEnd, FVector InStart, FTransform InBaseTransform, FVector InEndOffset)
 {
+
 	TArray<FVector> OutAngles;
 	OutAngles.Init(FVector(), InNumRays);
 
@@ -48,10 +49,27 @@ TArray<FVector> URayCastObserver::GenerateRayEndpoints(int32 InNumRays, float In
 		OutAngles[Index] = Rotator.RotateVector(InBaseEnd);
 	}
 
-	// Now we have a semi-sphere of points, centered around 0. We transform it to apply skew etc. then move it to our Actor
+	// Now we have a semi-sphere of points, centered around 0.
+	// Get the pawn's transform to apply the base transform relative to the pawn's orientation
+	AActor* Owner = this->TryGetOwner();
+	FTransform PawnTransform = FTransform::Identity;
+
+	if (Owner)
+	{
+		// Get the pawn's rotation to use as reference frame
+		PawnTransform = FTransform(Owner->GetActorRotation(), FVector::ZeroVector, FVector::OneVector);
+	} else{
+		UE_LOG(LogSchola, Warning, TEXT("RayCastSensor is Not Attached to an Actor!"))
+	}
+	
+	// Combine the pawn's transform with the base transform
+	// This makes InBaseTransform relative to the pawn's orientation
+	FTransform CombinedTransform = InBaseTransform*PawnTransform;
+	
 	for (int i = 0; i < OutAngles.Num(); i++)
 	{
-		OutAngles[i] = InBaseTransform.TransformVector(OutAngles[i]);
+		// Apply the combined transform that includes the pawn's orientation
+		OutAngles[i] = CombinedTransform.TransformVector(OutAngles[i]);
 		OutAngles[i] = OutAngles[i] + InStart;
 		OutAngles[i] = OutAngles[i] + InEndOffset;
 	}
@@ -152,7 +170,7 @@ void URayCastObserver::CollectObservations(FBoxPoint& OutObservations)
 	{
 		FVector ActorLocation = Owner->GetActorLocation();
 		FVector ForwardVector = Owner->GetActorForwardVector();
-		FVector Start = RayStartTransform.GetTranslation() + ActorLocation;
+		FVector Start = (RayStartTransform*FTransform(Owner->GetActorRotation(), FVector::ZeroVector, FVector::OneVector)).GetTranslation() + ActorLocation;
 		UE_LOG(LogSchola, Verbose, TEXT(" Actor Location: %s"), *ActorLocation.ToString());
 		UE_LOG(LogSchola, Verbose, TEXT(" Raycast starting from: %s"), *Start.ToString());
 		TArray<FVector> Endpoints = GenerateRayEndpoints(NumRays, RayDegrees, ForwardVector * RayLength, Start, RayStartTransform, RayEndOffset);
@@ -219,7 +237,7 @@ void URayCastObserver::DrawDebugLines()
 	{
 		FVector			ActorLocation = Owner->GetActorLocation();
 		FVector			ForwardVector = Owner->GetActorForwardVector();
-		FVector			Start = RayStartTransform.GetTranslation() + ActorLocation;
+		FVector			Start =  (RayStartTransform*FTransform(Owner->GetActorRotation(), FVector::ZeroVector, FVector::OneVector)).GetTranslation() + ActorLocation;
 		TArray<FVector> Endpoints = GenerateRayEndpoints(NumRays, RayDegrees, ForwardVector * RayLength, Start, RayStartTransform, RayEndOffset);
 
 		for (auto RayEndpoint : Endpoints)

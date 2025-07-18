@@ -6,7 +6,9 @@
 #include "Common/Spaces.h"
 #include "Common/Points.h"
 #include "Training/UpdateStructs/TrainingUpdate.h"
+#include "GymConnectors/AutoResetTypeEnum.h"
 #include "IGymConnector.generated.h"
+
 
 /**
  * @brief An interface for connectors between unreal and gym.
@@ -67,4 +69,12 @@ public:
 	 * @return True if the connector is ready to start training
 	 */
 	virtual bool CheckForStart() PURE_VIRTUAL(IGymConnector::CheckForStart, return true;);
+
+	// Auto Reset helpers
+	
+	/**
+	 * @brief Automatically reset some or all of the sub-environments of the Gym-Connector, to support Vectorized Environments.
+	 */
+	virtual void AutoReset() PURE_VIRTUAL(IGymConnector::AutoReset, return;);
+
 };

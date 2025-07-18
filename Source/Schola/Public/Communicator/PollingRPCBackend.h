@@ -1,10 +1,14 @@
-// Copyright (c) 2023 Advanced Micro Devices, Inc. All Rights Reserved.
+// Copyright (c) 2023-2025 Advanced Micro Devices, Inc. All Rights Reserved.
 
 #pragma once
 
-#include "AbstractRPCBackend.h"
-#include "CallData.h"
-#include "ComBackendInterface.h"
+#include "CoreMinimal.h"
+#include "HAL/Runnable.h"
+#include "HAL/RunnableThread.h"
+#include "./CallData.h"
+#include "./AbstractRPCBackend.h"
+#include "./ComBackendInterface.h"
+#include "Common/CommonInterfaces.h"
 
 template <class ServiceType, typename RequestType, typename ResponseType>
 class PollingRPCWorker : public FRunnable

@@ -8,7 +8,7 @@ from typing import Any, List, Optional, Tuple, Dict, Union
 import logging
 
 from schola.core.unreal_connections import UnrealConnection
-from schola.core.env import ScholaEnv, EnvAgentIdDict
+from schola.core.env import AutoResetType, ScholaEnv, EnvAgentIdDict
 from schola.core.spaces import (
     DictSpace,
 )
@@ -72,7 +72,7 @@ class BaseEnv(RayBaseEnv):
     ):
         self.first_poll = True
 
-        self._env = ScholaEnv(unreal_connection, verbosity)
+        self._env = ScholaEnv(unreal_connection, verbosity, auto_reset_type=AutoResetType.SAME_STEP)
         self.last_reset_obs = {}
         self.last_reset_infos = {}
 
@@ -225,3 +225,4 @@ class BaseEnv(RayBaseEnv):
 
     def stop(self) -> None:
         self._env.close()
+

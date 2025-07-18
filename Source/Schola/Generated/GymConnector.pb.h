@@ -128,6 +128,32 @@ inline bool CommunicatorStatus_Parse(
   return ::PROTOBUF_NAMESPACE_ID::internal::ParseNamedEnum<CommunicatorStatus>(
     CommunicatorStatus_descriptor(), name, value);
 }
+enum AutoResetType : int {
+  SAMESTEP = 0,
+  NEXTSTEP = 1,
+  DISABLED = 2,
+  AutoResetType_INT_MIN_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::min(),
+  AutoResetType_INT_MAX_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::max()
+};
+bool AutoResetType_IsValid(int value);
+constexpr AutoResetType AutoResetType_MIN = SAMESTEP;
+constexpr AutoResetType AutoResetType_MAX = DISABLED;
+constexpr int AutoResetType_ARRAYSIZE = AutoResetType_MAX + 1;
+
+const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* AutoResetType_descriptor();
+template<typename T>
+inline const std::string& AutoResetType_Name(T enum_t_value) {
+  static_assert(::std::is_same<T, AutoResetType>::value ||
+    ::std::is_integral<T>::value,
+    "Incorrect type passed to function AutoResetType_Name.");
+  return ::PROTOBUF_NAMESPACE_ID::internal::NameOfEnum(
+    AutoResetType_descriptor(), enum_t_value);
+}
+inline bool AutoResetType_Parse(
+    ::PROTOBUF_NAMESPACE_ID::ConstStringParam name, AutoResetType* value) {
+  return ::PROTOBUF_NAMESPACE_ID::internal::ParseNamedEnum<AutoResetType>(
+    AutoResetType_descriptor(), name, value);
+}
 // ===================================================================
 
 class EnvironmentReset_OptionsEntry_DoNotUse : public ::PROTOBUF_NAMESPACE_ID::internal::MapEntry<EnvironmentReset_OptionsEntry_DoNotUse, 
@@ -866,9 +892,10 @@ class TrainingDefinitionRequest final :
 // -------------------------------------------------------------------
 
 class GymConnectorStartRequest final :
-    public ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase /* @@protoc_insertion_point(class_definition:Schola.GymConnectorStartRequest) */ {
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:Schola.GymConnectorStartRequest) */ {
  public:
   inline GymConnectorStartRequest() : GymConnectorStartRequest(nullptr) {}
+  ~GymConnectorStartRequest() override;
   explicit PROTOBUF_CONSTEXPR GymConnectorStartRequest(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
 
   GymConnectorStartRequest(const GymConnectorStartRequest& from);
@@ -941,15 +968,29 @@ class GymConnectorStartRequest final :
   GymConnectorStartRequest* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
     return CreateMaybeMessage<GymConnectorStartRequest>(arena);
   }
-  using ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase::CopyFrom;
-  inline void CopyFrom(const GymConnectorStartRequest& from) {
-    ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase::CopyImpl(*this, from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const GymConnectorStartRequest& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const GymConnectorStartRequest& from) {
+    GymConnectorStartRequest::MergeImpl(*this, from);
   }
-  using ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase::MergeFrom;
-  void MergeFrom(const GymConnectorStartRequest& from) {
-    ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase::MergeImpl(*this, from);
-  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
   public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(GymConnectorStartRequest* other);
 
   private:
   friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
@@ -970,6 +1011,18 @@ class GymConnectorStartRequest final :
 
   // accessors -------------------------------------------------------
 
+  enum : int {
+    kAutoresetTypeFieldNumber = 1,
+  };
+  // .Schola.AutoResetType autoreset_type = 1;
+  void clear_autoreset_type();
+  ::Schola::AutoResetType autoreset_type() const;
+  void set_autoreset_type(::Schola::AutoResetType value);
+  private:
+  ::Schola::AutoResetType _internal_autoreset_type() const;
+  void _internal_set_autoreset_type(::Schola::AutoResetType value);
+  public:
+
   // @@protoc_insertion_point(class_scope:Schola.GymConnectorStartRequest)
  private:
   class _Internal;
@@ -978,7 +1031,10 @@ class GymConnectorStartRequest final :
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
   struct Impl_ {
+    int autoreset_type_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
+  union { Impl_ _impl_; };
   friend struct ::TableStruct_GymConnector_2eproto;
 };
 // -------------------------------------------------------------------
@@ -1709,6 +1765,26 @@ inline void TrainingStateUpdate::set_status(::Schola::CommunicatorStatus value) 
 
 // GymConnectorStartRequest
 
+// .Schola.AutoResetType autoreset_type = 1;
+inline void GymConnectorStartRequest::clear_autoreset_type() {
+  _impl_.autoreset_type_ = 0;
+}
+inline ::Schola::AutoResetType GymConnectorStartRequest::_internal_autoreset_type() const {
+  return static_cast< ::Schola::AutoResetType >(_impl_.autoreset_type_);
+}
+inline ::Schola::AutoResetType GymConnectorStartRequest::autoreset_type() const {
+  // @@protoc_insertion_point(field_get:Schola.GymConnectorStartRequest.autoreset_type)
+  return _internal_autoreset_type();
+}
+inline void GymConnectorStartRequest::_internal_set_autoreset_type(::Schola::AutoResetType value) {
+  
+  _impl_.autoreset_type_ = value;
+}
+inline void GymConnectorStartRequest::set_autoreset_type(::Schola::AutoResetType value) {
+  _internal_set_autoreset_type(value);
+  // @@protoc_insertion_point(field_set:Schola.GymConnectorStartRequest.autoreset_type)
+}
+
 // -------------------------------------------------------------------
 
 // GymConnectorStartResponse
@@ -1786,6 +1862,11 @@ template <> struct is_proto_enum< ::Schola::CommunicatorStatus> : ::std::true_ty
 template <>
 inline const EnumDescriptor* GetEnumDescriptor< ::Schola::CommunicatorStatus>() {
   return ::Schola::CommunicatorStatus_descriptor();
+}
+template <> struct is_proto_enum< ::Schola::AutoResetType> : ::std::true_type {};
+template <>
+inline const EnumDescriptor* GetEnumDescriptor< ::Schola::AutoResetType>() {
+  return ::Schola::AutoResetType_descriptor();
 }
 
 PROTOBUF_NAMESPACE_CLOSE

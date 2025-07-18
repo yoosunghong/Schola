@@ -1,7 +1,9 @@
 // Copyright (c) 2023-2025 Advanced Micro Devices, Inc. All Rights Reserved.
 
 #pragma once
+
 #include "Common/Points/Point.h"
+#include "Common/Points/PointVisitor.h"
 #include "DiscretePoint.generated.h"
 
 

@@ -37,7 +37,16 @@ message TrainingStateUpdate {
 
 message TrainingDefinitionRequest {}
 
-message GymConnectorStartRequest {}
+enum AutoResetType {
+    SAMESTEP = 0; //Default value is SAMESTEP for backwards compatibility
+    NEXTSTEP = 1;
+    DISABLED = 2;
+}
+
+
+message GymConnectorStartRequest {
+    AutoResetType autoreset_type = 1;
+}
 
 //this could potentially get an observation at some point
 message GymConnectorStartResponse {}

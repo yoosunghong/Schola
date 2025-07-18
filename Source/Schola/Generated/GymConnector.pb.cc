@@ -100,7 +100,9 @@ struct TrainingDefinitionRequestDefaultTypeInternal {
 };
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 TrainingDefinitionRequestDefaultTypeInternal _TrainingDefinitionRequest_default_instance_;
 PROTOBUF_CONSTEXPR GymConnectorStartRequest::GymConnectorStartRequest(
-    ::_pbi::ConstantInitialized) {}
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.autoreset_type_)*/0
+  , /*decltype(_impl_._cached_size_)*/{}} {}
 struct GymConnectorStartRequestDefaultTypeInternal {
   PROTOBUF_CONSTEXPR GymConnectorStartRequestDefaultTypeInternal()
       : _instance(::_pbi::ConstantInitialized{}) {}
@@ -158,7 +160,7 @@ struct InitialTrainingStateRequestDefaultTypeInternal {
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 InitialTrainingStateRequestDefaultTypeInternal _InitialTrainingStateRequest_default_instance_;
 }  // namespace Schola
 static ::_pb::Metadata file_level_metadata_GymConnector_2eproto[11];
-static const ::_pb::EnumDescriptor* file_level_enum_descriptors_GymConnector_2eproto[1];
+static const ::_pb::EnumDescriptor* file_level_enum_descriptors_GymConnector_2eproto[2];
 static constexpr ::_pb::ServiceDescriptor const** file_level_service_descriptors_GymConnector_2eproto = nullptr;
 
 const uint32_t TableStruct_GymConnector_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
@@ -220,6 +222,7 @@ const uint32_t TableStruct_GymConnector_2eproto::offsets[] PROTOBUF_SECTION_VARI
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
+  PROTOBUF_FIELD_OFFSET(::Schola::GymConnectorStartRequest, _impl_.autoreset_type_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::Schola::GymConnectorStartResponse, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -258,10 +261,10 @@ static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protode
   { 38, -1, -1, sizeof(::Schola::TrainingStateUpdate)},
   { 46, -1, -1, sizeof(::Schola::TrainingDefinitionRequest)},
   { 52, -1, -1, sizeof(::Schola::GymConnectorStartRequest)},
-  { 58, -1, -1, sizeof(::Schola::GymConnectorStartResponse)},
-  { 64, -1, -1, sizeof(::Schola::InititalEnvironmentStateRequest)},
-  { 70, 78, -1, sizeof(::Schola::InitialTrainingStateRequest_EnvironmentStateRequestsEntry_DoNotUse)},
-  { 80, -1, -1, sizeof(::Schola::InitialTrainingStateRequest)},
+  { 59, -1, -1, sizeof(::Schola::GymConnectorStartResponse)},
+  { 65, -1, -1, sizeof(::Schola::InititalEnvironmentStateRequest)},
+  { 71, 79, -1, sizeof(::Schola::InitialTrainingStateRequest_EnvironmentStateRequestsEntry_DoNotUse)},
+  { 81, -1, -1, sizeof(::Schola::InitialTrainingStateRequest)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
@@ -293,26 +296,29 @@ const char descriptor_table_protodef_GymConnector_2eproto[] PROTOBUF_SECTION_VAR
   "Entry\022*\n\006status\030\002 \001(\0162\032.Schola.Communica"
   "torStatus\032N\n\014UpdatesEntry\022\013\n\003key\030\001 \001(\005\022-"
   "\n\005value\030\002 \001(\0132\036.Schola.EnvironmentStateU"
-  "pdate:\0028\001\"\033\n\031TrainingDefinitionRequest\"\032"
-  "\n\030GymConnectorStartRequest\"\033\n\031GymConnect"
-  "orStartResponse\"!\n\037InititalEnvironmentSt"
-  "ateRequest\"\356\001\n\033InitialTrainingStateReque"
-  "st\022e\n\032environment_state_requests\030\001 \003(\0132A"
-  ".Schola.InitialTrainingStateRequest.Envi"
-  "ronmentStateRequestsEntry\032h\n\035Environment"
-  "StateRequestsEntry\022\013\n\003key\030\001 \001(\005\0226\n\005value"
-  "\030\002 \001(\0132\'.Schola.InititalEnvironmentState"
-  "Request:\0028\001*5\n\022CommunicatorStatus\022\010\n\004GOO"
-  "D\020\000\022\t\n\005ERROR\020\001\022\n\n\006CLOSED\020\0022\347\002\n\nGymServic"
-  "e\022A\n\013UpdateState\022\033.Schola.TrainingStateU"
-  "pdate\032\025.Schola.TrainingState\022`\n\033RequestI"
-  "nitialTrainingState\022#.Schola.InitialTrai"
-  "ningStateRequest\032\034.Schola.InitialTrainin"
-  "gState\022Z\n\031RequestTrainingDefinition\022!.Sc"
-  "hola.TrainingDefinitionRequest\032\032.Schola."
-  "TrainingDefinition\022X\n\021StartGymConnector\022"
-  " .Schola.GymConnectorStartRequest\032!.Scho"
-  "la.GymConnectorStartResponseb\006proto3"
+  "pdate:\0028\001\"\033\n\031TrainingDefinitionRequest\"I"
+  "\n\030GymConnectorStartRequest\022-\n\016autoreset_"
+  "type\030\001 \001(\0162\025.Schola.AutoResetType\"\033\n\031Gym"
+  "ConnectorStartResponse\"!\n\037InititalEnviro"
+  "nmentStateRequest\"\356\001\n\033InitialTrainingSta"
+  "teRequest\022e\n\032environment_state_requests\030"
+  "\001 \003(\0132A.Schola.InitialTrainingStateReque"
+  "st.EnvironmentStateRequestsEntry\032h\n\035Envi"
+  "ronmentStateRequestsEntry\022\013\n\003key\030\001 \001(\005\0226"
+  "\n\005value\030\002 \001(\0132\'.Schola.InititalEnvironme"
+  "ntStateRequest:\0028\001*5\n\022CommunicatorStatus"
+  "\022\010\n\004GOOD\020\000\022\t\n\005ERROR\020\001\022\n\n\006CLOSED\020\002*9\n\rAut"
+  "oResetType\022\014\n\010SAMESTEP\020\000\022\014\n\010NEXTSTEP\020\001\022\014"
+  "\n\010DISABLED\020\0022\347\002\n\nGymService\022A\n\013UpdateSta"
+  "te\022\033.Schola.TrainingStateUpdate\032\025.Schola"
+  ".TrainingState\022`\n\033RequestInitialTraining"
+  "State\022#.Schola.InitialTrainingStateReque"
+  "st\032\034.Schola.InitialTrainingState\022Z\n\031Requ"
+  "estTrainingDefinition\022!.Schola.TrainingD"
+  "efinitionRequest\032\032.Schola.TrainingDefini"
+  "tion\022X\n\021StartGymConnector\022 .Schola.GymCo"
+  "nnectorStartRequest\032!.Schola.GymConnecto"
+  "rStartResponseb\006proto3"
   ;
 static const ::_pbi::DescriptorTable* const descriptor_table_GymConnector_2eproto_deps[3] = {
   &::descriptor_table_Definitions_2eproto,
@@ -321,7 +327,7 @@ static const ::_pbi::DescriptorTable* const descriptor_table_GymConnector_2eprot
 };
 static ::_pbi::once_flag descriptor_table_GymConnector_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_GymConnector_2eproto = {
-    false, false, 1356, descriptor_table_protodef_GymConnector_2eproto,
+    false, false, 1462, descriptor_table_protodef_GymConnector_2eproto,
     "GymConnector.proto",
     &descriptor_table_GymConnector_2eproto_once, descriptor_table_GymConnector_2eproto_deps, 3, 11,
     schemas, file_default_instances, TableStruct_GymConnector_2eproto::offsets,
@@ -340,6 +346,21 @@ const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* CommunicatorStatus_descriptor() {
   return file_level_enum_descriptors_GymConnector_2eproto[0];
 }
 bool CommunicatorStatus_IsValid(int value) {
+  switch (value) {
+    case 0:
+    case 1:
+    case 2:
+      return true;
+    default:
+      return false;
+  }
+}
+
+const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* AutoResetType_descriptor() {
+  ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&descriptor_table_GymConnector_2eproto);
+  return file_level_enum_descriptors_GymConnector_2eproto[1];
+}
+bool AutoResetType_IsValid(int value) {
   switch (value) {
     case 0:
     case 1:
@@ -1265,31 +1286,172 @@ class GymConnectorStartRequest::_Internal {
 
 GymConnectorStartRequest::GymConnectorStartRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
-  : ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase(arena, is_message_owned) {
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
+  SharedCtor(arena, is_message_owned);
   // @@protoc_insertion_point(arena_constructor:Schola.GymConnectorStartRequest)
 }
 GymConnectorStartRequest::GymConnectorStartRequest(const GymConnectorStartRequest& from)
-  : ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase() {
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
   GymConnectorStartRequest* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.autoreset_type_){}
+    , /*decltype(_impl_._cached_size_)*/{}};
+
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _this->_impl_.autoreset_type_ = from._impl_.autoreset_type_;
   // @@protoc_insertion_point(copy_constructor:Schola.GymConnectorStartRequest)
 }
 
+inline void GymConnectorStartRequest::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_.autoreset_type_){0}
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
+}
 
+GymConnectorStartRequest::~GymConnectorStartRequest() {
+  // @@protoc_insertion_point(destructor:Schola.GymConnectorStartRequest)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
 
+inline void GymConnectorStartRequest::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+}
 
+void GymConnectorStartRequest::SetCachedSize(int size) const {
+  _impl_._cached_size_.Set(size);
+}
+
+void GymConnectorStartRequest::Clear() {
+// @@protoc_insertion_point(message_clear_start:Schola.GymConnectorStartRequest)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  _impl_.autoreset_type_ = 0;
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* GymConnectorStartRequest::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // .Schola.AutoResetType autoreset_type = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 8)) {
+          uint64_t val = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+          _internal_set_autoreset_type(static_cast<::Schola::AutoResetType>(val));
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* GymConnectorStartRequest::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:Schola.GymConnectorStartRequest)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // .Schola.AutoResetType autoreset_type = 1;
+  if (this->_internal_autoreset_type() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteEnumToArray(
+      1, this->_internal_autoreset_type(), target);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:Schola.GymConnectorStartRequest)
+  return target;
+}
+
+size_t GymConnectorStartRequest::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:Schola.GymConnectorStartRequest)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // .Schola.AutoResetType autoreset_type = 1;
+  if (this->_internal_autoreset_type() != 0) {
+    total_size += 1 +
+      ::_pbi::WireFormatLite::EnumSize(this->_internal_autoreset_type());
+  }
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
+}
 
 const ::PROTOBUF_NAMESPACE_ID::Message::ClassData GymConnectorStartRequest::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase::CopyImpl,
-    ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase::MergeImpl,
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
+    GymConnectorStartRequest::MergeImpl
 };
 const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GymConnectorStartRequest::GetClassData() const { return &_class_data_; }
 
 
+void GymConnectorStartRequest::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<GymConnectorStartRequest*>(&to_msg);
+  auto& from = static_cast<const GymConnectorStartRequest&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:Schola.GymConnectorStartRequest)
+  GOOGLE_DCHECK_NE(&from, _this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
 
+  if (from._internal_autoreset_type() != 0) {
+    _this->_internal_set_autoreset_type(from._internal_autoreset_type());
+  }
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
 
+void GymConnectorStartRequest::CopyFrom(const GymConnectorStartRequest& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:Schola.GymConnectorStartRequest)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
 
+bool GymConnectorStartRequest::IsInitialized() const {
+  return true;
+}
 
+void GymConnectorStartRequest::InternalSwap(GymConnectorStartRequest* other) {
+  using std::swap;
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  swap(_impl_.autoreset_type_, other->_impl_.autoreset_type_);
+}
 
 ::PROTOBUF_NAMESPACE_ID::Metadata GymConnectorStartRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
