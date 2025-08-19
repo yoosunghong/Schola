@@ -11,9 +11,11 @@
 #include "Common/Spaces.h"
 #include "Common/Points.h"
 #include "Common/LogSchola.h"
+#include "Common/TrajectoryData.h"
 #include "Actuators/AbstractActuators.h"
 #include "Containers/SortedMap.h"
 #include "Agent/AgentComponents/ActuatorComponent.h"
+#include "JsonObjectConverter.h"
 #include "InteractionManager.generated.h"
 
 UCLASS(Blueprintable)
@@ -26,7 +28,7 @@ public:
 	TArray<UAbstractObserver*> Observers;
 
 	UPROPERTY(BlueprintReadOnly, VisibleAnywhere, Category = "Reinforcement Learning")
-	TArray<UActuator*>		   Actuators;
+	TArray<UActuator*> Actuators;
 
 	/** The most recently collected observations */
 	UPROPERTY()
@@ -35,6 +37,10 @@ public:
 	/** The input output spaces, and other information for this interaction manager */
 	UPROPERTY(VisibleAnywhere, meta = (ShowInnerProperties), Category = "Reinforcement Learning")
 	FInteractionDefinition InteractionDefn;
+
+	/** The trajectory for the current step. This is used by trajectory recorders who observe the interaction manager */
+	UPROPERTY()
+	FTrajectoryStep TrajectoryStep = FTrajectoryStep(0, {}, {});
 
 	/**
 	 * @brief Setup the observers for this interaction manager
@@ -63,12 +69,12 @@ public:
 	 * @param[out] OutActuators A copy of the input actuators (used to set the Actuators on the InteractionManager)
 	 */
 	void SetupActuators(const TArray<UActuator*>& InActuators, TArray<UActuator*>& OutActuators);
-	
+
 	/**
 	 * @brief Send actions to actuators
 	 * @param[in] OutActuators The actuators to send actions to
 	 * @param[in] Actions The actions to send
-	*/
+	 */
 	void SendActionsToActuators(TArray<UActuator*>& OutActuators, const FDictPoint& Actions);
 
 	/**

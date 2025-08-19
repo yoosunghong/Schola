@@ -14,3 +14,4 @@ Guides
    setup_distributed_training
    extending_launch
    tips_and_tricks
+   behaviour_cloning

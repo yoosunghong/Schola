@@ -7,12 +7,15 @@ import grpc
 import abc
 from contextlib import ContextDecorator
 
+
 class ScholaException(Exception):
     """
     Base class for all exceptions in Schola.
     """
+
     ...
-   
+
+
 class WrappedGRPCException(ScholaException, metaclass=abc.ABCMeta):
     """
     Base class for all Schola exceptions that wrap GRPC exceptions, to add more information.
@@ -20,13 +23,14 @@ class WrappedGRPCException(ScholaException, metaclass=abc.ABCMeta):
 
     @classmethod
     @abc.abstractmethod
-    def comes_from(cls, exception):
-        ...
+    def comes_from(cls, exception): ...
+
 
 class NoServerError(WrappedGRPCException):
     """
     An Error that occurs when the server is not detected. Either Unreal is not running or the connection is not established.
     """
+
     def __init__(self, exception):
         pass
 
@@ -72,6 +76,7 @@ class MissingMethodError(WrappedGRPCException):
     """
     An Error that occurs when a method is called that doesn't exist in the Unreal environment.
     """
+
     def __init__(self, exception):
         pass
 
@@ -87,7 +92,7 @@ class EnvironmentException(ScholaException):
     """
     An Exception that occurs when there is a generic issue with an environment wrapping a ScholaEnvironment
     """
-    
+
     def __init__(self, message):
         super().__init__(message)
 
@@ -115,25 +120,25 @@ class ScholaErrorContextManager(ContextDecorator):
             # re-raise the current exception with false
             return False
         # return None to let the exceptions propagate on their own
+        return None
+
 
 class NoAgentsException(ScholaException):
     """
     An Exception that occurs when there are no agents in the environment.
     """
+
     def __init__(self, env_id):
         self.env_id = env_id
 
     def __str__(self):
-        return (
-            f"Connected to Unreal succesfully but Env:{self.env_id} has no agents. Please register atleast one agent to each environment."
-        )
-    
+        return f"Connected to Unreal successfully but Env:{self.env_id} has no agents. Please register at least one agent to each environment."
+
+
 class NoEnvironmentsException(ScholaException):
-    
+
     def __init__(self):
-        ...
-        
+        pass
+
     def __str__(self):
-        return (
-            "Connected to Unreal succesfully but received no Environment Definitions. Check that there is an environment object in your map."
-        )
+        return "Connected to Unreal successfully but received no Environment Definitions. Check that there is an environment object in your map."

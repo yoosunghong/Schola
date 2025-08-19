@@ -11,7 +11,7 @@ import traceback
 from schola.ray.env import BaseEnv
 from schola.ray.utils import MultiAgentTransposeImageWrapper
 from schola.core.env import ScholaEnv
-from schola.core.utils import get_plugins
+from schola.core.utils.plugins import get_plugins
 
 import ray
 from ray import air, tune
@@ -26,7 +26,18 @@ from schola.scripts.common import (
 )
 from dataclasses import fields
 from ray.rllib.policy.policy import Policy
-from schola.scripts.ray.settings import TrainingSettings, ResumeSettings, LoggingSettings, NetworkArchitectureSettings, ResourceSettings, RLlibScriptArgs, PPOSettings, APPOSettings, IMPALASettings
+from schola.scripts.ray.settings import (
+    TrainingSettings,
+    ResumeSettings,
+    LoggingSettings,
+    NetworkArchitectureSettings,
+    ResourceSettings,
+    RLlibScriptArgs,
+    PPOSettings,
+    APPOSettings,
+    IMPALASettings,
+)
+
 
 def make_parser():
     """
@@ -48,27 +59,40 @@ def make_parser():
     LoggingSettings.populate_arg_group(logging_args_group)
 
     checkpoint_group = add_checkpoint_args(parser)
-    
+
     ResumeSettings.populate_arg_group(checkpoint_group)
 
     architecture_group = parser.add_argument_group("Network Architecture Arguments")
     NetworkArchitectureSettings.populate_arg_group(architecture_group)
-    
+
     resource_group = parser.add_argument_group("Resource Arguments")
     ResourceSettings.populate_arg_group(resource_group)
 
-    subparsers = parser.add_subparsers(required=True, help="Choose the algorithm to use")  
+    subparsers = parser.add_subparsers(
+        required=True, help="Choose the algorithm to use"
+    )
 
-    ppo_parser = subparsers.add_parser("PPO", help="Proximal Policy Optimization", parents=[PPOSettings.get_parser()])
-    appo_parser = subparsers.add_parser("APPO", help="Asynchronous Proximal Policy Optimization", parents=[APPOSettings.get_parser()])
-    impala_parser = subparsers.add_parser("IMPALA", help="Importance Weighted Actor-Learner Architecture", parents=[IMPALASettings.get_parser()])
+    ppo_parser = subparsers.add_parser(
+        "PPO", help="Proximal Policy Optimization", parents=[PPOSettings.get_parser()]
+    )
+    appo_parser = subparsers.add_parser(
+        "APPO",
+        help="Asynchronous Proximal Policy Optimization",
+        parents=[APPOSettings.get_parser()],
+    )
+    impala_parser = subparsers.add_parser(
+        "IMPALA",
+        help="Importance Weighted Actor-Learner Architecture",
+        parents=[IMPALASettings.get_parser()],
+    )
 
     return parser
 
-def get_dataclass_args(args: Dict[str,Any], dataclass : Type[Any] ) -> Dict[str,Any]:
+
+def get_dataclass_args(args: Dict[str, Any], dataclass: Type[Any]) -> Dict[str, Any]:
     """
     Get the arguments for a dataclass from a dictionary, potentially containing additional arguments.
-    
+
     Parameters
     ----------
     args : Dict[str,Any]
@@ -76,13 +100,14 @@ def get_dataclass_args(args: Dict[str,Any], dataclass : Type[Any] ) -> Dict[str,
 
     dataclass : Type[Any]
         The dataclass to get the arguments for.
-    
+
     Returns
     -------
     Dict[str,Any]
         The arguments for the dataclass.
     """
     return {k: v for k, v in args.items() if k in {f.name for f in fields(dataclass)}}
+
 
 def main_from_cli() -> tune.ExperimentAnalysis:
     """
@@ -122,23 +147,24 @@ def main_from_cli() -> tune.ExperimentAnalysis:
     network_args = NetworkArchitectureSettings(**network_args)
     resource_args = ResourceSettings(**resource_args)
 
-    plugins=[]
+    plugins = []
     for plugin in discovered_plugins:
         plugin_args = get_dataclass_args(args_dict, plugin)
         plugins.append(plugin(**plugin_args))
 
     args = RLlibScriptArgs(
-        algorithm_settings=algorithm_args, 
-        training_settings=training_args, 
-        logging_settings=logging_args, 
-        resume_settings=resume_args, 
-        network_architecture_settings=network_args, 
-        resource_settings=resource_args, 
+        algorithm_settings=algorithm_args,
+        training_settings=training_args,
+        logging_settings=logging_args,
+        resume_settings=resume_args,
+        network_architecture_settings=network_args,
+        resource_settings=resource_args,
         plugins=plugins,
         **rllib_args
-        )
-    
+    )
+
     return main(args)
+
 
 def main(args: RLlibScriptArgs) -> tune.ExperimentAnalysis:
     """
@@ -155,18 +181,26 @@ def main(args: RLlibScriptArgs) -> tune.ExperimentAnalysis:
         The results of the training
     """
     # collect the names of the agents by creating a temporary environment
-    schola_env = ScholaEnv(args.make_unreal_connection(), verbosity=args.logging_settings.schola_verbosity)
+    schola_env = ScholaEnv(
+        args.make_unreal_connection(), verbosity=args.logging_settings.schola_verbosity
+    )
     agent_names = schola_env.agent_display_names[0]
     schola_env.close()
-    
+
     # Clusters configure resources automatically
     if args.resource_settings.using_cluster:
         ray.init()
-    else: 
-        ray.init(num_cpus=args.resource_settings.num_cpus, num_gpus=args.resource_settings.num_gpus)
+    else:
+        ray.init(
+            num_cpus=args.resource_settings.num_cpus,
+            num_gpus=args.resource_settings.num_gpus,
+        )
 
     def env_creator(env_config):
-        env = BaseEnv(args.make_unreal_connection(), verbosity=args.logging_settings.schola_verbosity)
+        env = BaseEnv(
+            args.make_unreal_connection(),
+            verbosity=args.logging_settings.schola_verbosity,
+        )
         env = MultiAgentTransposeImageWrapper(env)
         return env
 
@@ -174,22 +208,18 @@ def main(args: RLlibScriptArgs) -> tune.ExperimentAnalysis:
         return agent_names[agent_id]
 
     register_env("schola_env", env_creator)
-    #Note New Ray Stack doesn't support Vectorized MutiAgent environments yet so the old stack is better
-    config : Union[PPOConfig, APPOConfig, IMPALAConfig] = (
+    # Note New Ray Stack doesn't support Vectorized MutiAgent environments yet so the old stack is better
+    config: Union[PPOConfig, APPOConfig, IMPALAConfig] = (
         args.algorithm_settings.rllib_config()
         .api_stack(
             enable_rl_module_and_learner=False,
             enable_env_runner_and_connector_v2=False,
         )
-        .environment("schola_env", 
-                     clip_rewards=False,
-                     clip_actions=True,
-                     normalize_actions=False)
-        .framework("torch")
-        .env_runners(
-            num_env_runners=0,
-            num_envs_per_env_runner=1
+        .environment(
+            "schola_env", clip_rewards=False, clip_actions=True, normalize_actions=False
         )
+        .framework("torch")
+        .env_runners(num_env_runners=0, num_envs_per_env_runner=1)
         .multi_agent(
             policies={
                 agent_name: PolicySpec(observation_space=None, action_space=None)
@@ -200,7 +230,7 @@ def main(args: RLlibScriptArgs) -> tune.ExperimentAnalysis:
         )
         .resources(
             num_cpus_for_main_process=args.resource_settings.num_cpus_for_main_process,
-            num_gpus = args.resource_settings.num_gpus
+            num_gpus=args.resource_settings.num_gpus,
         )
         .learners(
             num_learners=args.resource_settings.num_learners,
@@ -216,7 +246,7 @@ def main(args: RLlibScriptArgs) -> tune.ExperimentAnalysis:
             model={
                 "fcnet_hiddens": args.network_architecture_settings.fcnet_hiddens,
                 "fcnet_activation": args.network_architecture_settings.activation.layer,
-                "free_log_std":False, # onnx fails to load if this is set to True
+                "free_log_std": False,  # onnx fails to load if this is set to True
                 "use_attention": args.network_architecture_settings.use_attention,
                 "attention_dim": args.network_architecture_settings.attention_dim,
             },
@@ -230,7 +260,7 @@ def main(args: RLlibScriptArgs) -> tune.ExperimentAnalysis:
 
     callbacks = []
     for plugin in args.plugins:
-        callbacks+=plugin.get_extra_callbacks()
+        callbacks += plugin.get_extra_callbacks()
 
     print("Starting training")
     try:
@@ -264,7 +294,6 @@ def main(args: RLlibScriptArgs) -> tune.ExperimentAnalysis:
 
 
 def debug_main_from_cli() -> None:
-
     """
     Main function for launching training with ray from the command line, that catches any errors and waits for user input to close.
 

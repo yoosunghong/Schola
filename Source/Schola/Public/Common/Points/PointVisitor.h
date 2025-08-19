@@ -22,7 +22,6 @@ public:
 	virtual void Visit(FDiscretePoint& Point) = 0;
 
 	virtual void Visit(FBoxPoint& Point) = 0;
-
 };
 /**
  * @brief A base class for objects that can operate on any const point. This is used to implement the visitor pattern
@@ -35,5 +34,4 @@ public:
 	virtual void Visit(const FDiscretePoint& Point) = 0;
 
 	virtual void Visit(const FBoxPoint& Point) = 0;
-
 };

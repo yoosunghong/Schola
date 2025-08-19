@@ -15,7 +15,7 @@ struct SCHOLA_API FBoxPoint : public FPoint
 	GENERATED_BODY()
 
 	/** the values of this point */
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category="Point")
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Point")
 	TArray<float> Values;
 
 	/**
@@ -23,18 +23,16 @@ struct SCHOLA_API FBoxPoint : public FPoint
 	 */
 	FBoxPoint()
 	{
-
 	}
 
 	FBoxPoint(const TArray<float>& InValues)
 		: Values(InValues)
 	{
-		
 	}
 
-	FBoxPoint(std::initializer_list<float> InValues) : Values(InValues)
+	FBoxPoint(std::initializer_list<float> InValues)
+		: Values(InValues)
 	{
-
 	}
 
 	/**
@@ -43,7 +41,7 @@ struct SCHOLA_API FBoxPoint : public FPoint
 	 * @param[in] Num The size of the array
 	 */
 	FBoxPoint(const float* Data, int Num)
-		: Values(Data,Num)
+		: Values(Data, Num)
 	{
 	}
 
@@ -68,7 +66,6 @@ struct SCHOLA_API FBoxPoint : public FPoint
 
 	virtual ~FBoxPoint()
 	{
-
 	}
 
 	/**
@@ -79,7 +76,7 @@ struct SCHOLA_API FBoxPoint : public FPoint
 	{
 		this->Values.Add(Value);
 	}
-	/** 
+	/**
 	 * @brief Reset the values of the BoxPoint. Clears the current values
 	 * @note This is doesn't reset the size of the array so subsequent calls to Add will not reallocate memory
 	 */
@@ -91,4 +88,22 @@ struct SCHOLA_API FBoxPoint : public FPoint
 	void Accept(PointVisitor& Visitor) override;
 
 	void Accept(ConstPointVisitor& Visitor) const override;
+
+	/**
+	 * @brief Convert this point to a string representation
+	 * @return A string representation of this point
+	 */
+	FString ToString() const override
+	{
+		FString Result = TEXT("");
+		for (int i = 0; i < this->Values.Num(); i++)
+		{
+			Result += FString::SanitizeFloat(this->Values[i]);
+			if (i != this->Values.Num() - 1)
+			{
+				Result += TEXT(", ");
+			}
+		}
+		return Result;
+	};
 };

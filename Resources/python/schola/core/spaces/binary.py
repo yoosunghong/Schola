@@ -22,7 +22,7 @@ class MultiBinarySpace(gymnasium.spaces.MultiBinary, UnrealSpace):
     ----------
     n : int
         The number of binary values in the space.
-    
+
     Attributes
     ----------
     shape : Tuple[int]
@@ -39,7 +39,7 @@ class MultiBinarySpace(gymnasium.spaces.MultiBinary, UnrealSpace):
     proto_space = proto_spaces.BinarySpace
     _name = "binary_space"
 
-    def __init__(self, n : int):
+    def __init__(self, n: int):
         super().__init__(n=n)
 
     def to_normalized(self):
@@ -49,18 +49,18 @@ class MultiBinarySpace(gymnasium.spaces.MultiBinary, UnrealSpace):
         return self
 
     @classmethod
-    def from_proto(cls, message : proto_spaces.BinarySpace):
+    def from_proto(cls, message: proto_spaces.BinarySpace):
         return MultiBinarySpace(message.shape)
 
     @classmethod
     def is_empty_definition(cls, message: proto_spaces.BinarySpace):
         return message.shape == 0
 
-    def fill_proto(self, msg : proto_points.FundamentalPoint, values):
+    def fill_proto(self, msg: proto_points.FundamentalPoint, values):
         msg.binary_point.values.extend(values)
 
     @classmethod
-    def merge(cls, *spaces : List["MultiBinarySpace"]) -> "MultiBinarySpace":
+    def merge(cls, *spaces: List["MultiBinarySpace"]) -> "MultiBinarySpace":
         """
         Merge multiple MultiBinarySpaces into a single space.
 
@@ -73,7 +73,7 @@ class MultiBinarySpace(gymnasium.spaces.MultiBinary, UnrealSpace):
         -------
         MultiBinarySpace
             The merged space.
-        
+
         Raises
         ------
         TypeError
@@ -88,9 +88,10 @@ class MultiBinarySpace(gymnasium.spaces.MultiBinary, UnrealSpace):
         try:
             return MultiBinarySpace(sum((space.n for space in spaces)))
         except:
-             raise TypeError("can only merge MultiBinarySpaces with other MultiBinarySpaces")
+            raise TypeError(
+                "can only merge MultiBinarySpaces with other MultiBinarySpaces"
+            )
 
-            
     def process_data(self, msg: proto_points.FundamentalPoint) -> np.ndarray:
         return np.asarray(msg.binary_point.values)
 

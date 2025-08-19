@@ -7,7 +7,7 @@ Implementation of ray.rllib.env.base_env.BaseEnv backed by a Schola Environment.
 from typing import Any, List, Optional, Tuple, Dict, Union
 import logging
 
-from schola.core.unreal_connections import UnrealConnection
+from schola.core.unreal_connections import BaseUnrealConnection
 from schola.core.env import AutoResetType, ScholaEnv, EnvAgentIdDict
 from schola.core.spaces import (
     DictSpace,
@@ -50,7 +50,7 @@ class BaseEnv(RayBaseEnv):
 
     Parameters
     ----------
-    unreal_connection : UnrealConnection
+    unreal_connection : BaseUnrealConnection
         The connection to the Unreal Engine environment.
     verbosity : int, default=0
         The verbosity level for the environment.
@@ -67,12 +67,14 @@ class BaseEnv(RayBaseEnv):
 
     def __init__(
         self,
-        unreal_connection: UnrealConnection,
+        unreal_connection: BaseUnrealConnection,
         verbosity: int = 0,
     ):
         self.first_poll = True
 
-        self._env = ScholaEnv(unreal_connection, verbosity, auto_reset_type=AutoResetType.SAME_STEP)
+        self._env = ScholaEnv(
+            unreal_connection, verbosity, auto_reset_type=AutoResetType.SAME_STEP
+        )
         self.last_reset_obs = {}
         self.last_reset_infos = {}
 
@@ -167,7 +169,7 @@ class BaseEnv(RayBaseEnv):
             A dictionary, keyed by the environment and agent Id, containing the termination flag for each agent.
         truncateds : EnvAgentIdDict[bool]
             A dictionary, keyed by the environment and agent Id, containing the truncation flag for each agent.
-        infos : EnvAgentIdDict[Dict[str,str]]]:
+        infos : EnvAgentIdDict[Dict[str,str]]]
             A dictionary, keyed by the environment and agent Id, containing the information dictionary for each agent.
         off_policy_actions : EnvAgentIdDict[Any]
             A dictionary, keyed by the environment and agent Id, containing the off-policy actions for each agent. Unused.
@@ -195,14 +197,13 @@ class BaseEnv(RayBaseEnv):
             truncateds[env_id]["__all__"] = all(truncateds[env_id].values())
             if terminateds[env_id]["__all__"] or truncateds[env_id]["__all__"]:
                 completed_env_ids.append(env_id)
-                
 
         if completed_env_ids:
             self.last_reset_obs, self.last_reset_infos = self._env.soft_reset(
                 completed_env_ids
             )
-       
-        #logging.info(f"{obs}, {terminateds},{truncateds}, {infos}")
+
+        # logging.info(f"{obs}, {terminateds},{truncateds}, {infos}")
         logging.info(f"{terminateds}")
         return obs, rewards, terminateds, truncateds, infos, off_policy_actions
 
@@ -214,7 +215,7 @@ class BaseEnv(RayBaseEnv):
         env_id: Optional[int] = None,
         seed: Optional[Union[List[int], int]] = None,
         options: Optional[Dict[str, str]] = None,
-    ):
+    ) -> Tuple[Dict[int, Dict[str, Any]], Dict[int, Dict[str, str]]]:
         logging.info(env_id)
         if env_id is not None:
             obs = {env_id: self.last_reset_obs[env_id]}
@@ -225,4 +226,3 @@ class BaseEnv(RayBaseEnv):
 
     def stop(self) -> None:
         self._env.close()
-

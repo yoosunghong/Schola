@@ -5,7 +5,14 @@ Tools for adapting Stable Baselines 3 PPO implementation to work with dictionary
 """
 from collections import OrderedDict, defaultdict
 from functools import cached_property, reduce
-from stable_baselines3.common.distributions import Distribution, DiagGaussianDistribution, MultiCategoricalDistribution, CategoricalDistribution, BernoulliDistribution, StateDependentNoiseDistribution
+from stable_baselines3.common.distributions import (
+    Distribution,
+    DiagGaussianDistribution,
+    MultiCategoricalDistribution,
+    CategoricalDistribution,
+    BernoulliDistribution,
+    StateDependentNoiseDistribution,
+)
 from stable_baselines3.common.distributions import make_proba_distribution
 from stable_baselines3 import PPO
 import stable_baselines3.common.base_class as base
@@ -23,9 +30,10 @@ from stable_baselines3.common.policies import ActorCriticPolicy
 from stable_baselines3.common.type_aliases import GymEnv, Schedule
 
 
-def reshape_nonbatch(tensor : th.Tensor) -> th.Tensor:
+def reshape_nonbatch(tensor: th.Tensor) -> th.Tensor:
     batch_dim = tensor.shape[0]
-    return tensor.view(batch_dim,-1)
+    return tensor.view(batch_dim, -1)
+
 
 # this base class is a lie we use to bypass awful design in SB3 (deep seated checks that our distribution is one of 4 distributions)
 class HybridDistribution(DiagGaussianDistribution):
@@ -40,21 +48,26 @@ class HybridDistribution(DiagGaussianDistribution):
         The normalization factor for discrete actions, by default 1.0
     continuous_norm_factor : float, default=1.0
         The normalization factor for continuous actions, by default 1.0
-    
+
     Attributes
     ----------
     distributions : OrderedDict[str,Distribution]
         A dictionary of distributions to use for the composite distribution.
     """
 
-    #we could make this take an action space and use that to create the various dims we need
-    def __init__(self, distributions : OrderedDict, discrete_norm_factor = 1.0, continuous_norm_factor = 1.0):
-        self.distributions : OrderedDict[str,Distribution] = distributions
+    # we could make this take an action space and use that to create the various dims we need
+    def __init__(
+        self,
+        distributions: OrderedDict,
+        discrete_norm_factor=1.0,
+        continuous_norm_factor=1.0,
+    ):
+        self.distributions: OrderedDict[str, Distribution] = distributions
         self._discrete_norm_factor = discrete_norm_factor
         self._continuous_norm_factor = continuous_norm_factor
-        
+
     @cached_property
-    def action_dims(self) -> Dict[str,int]:
+    def action_dims(self) -> Dict[str, int]:
         """
         The size of the action tensor corresponding to each branch of the distribution.
 
@@ -71,8 +84,12 @@ class HybridDistribution(DiagGaussianDistribution):
             elif isinstance(dist, CategoricalDistribution):
                 action_dims[name] = 1
             else:
-                #not all of the classes use action_dim or action_dims, so try both
-                action_dims[name] = dist.action_dims if hasattr(dist,"action_dims") else dist.action_dim
+                # not all of the classes use action_dim or action_dims, so try both
+                action_dims[name] = (
+                    dist.action_dims
+                    if hasattr(dist, "action_dims")
+                    else dist.action_dim
+                )
         return action_dims
 
     @cached_property
@@ -86,10 +103,10 @@ class HybridDistribution(DiagGaussianDistribution):
             The size of the action tensor corresponding to this distribution.
         """
         return sum(self.action_dims.values())
-    
-    #Note: We treat everything as having a dimension of size 0 by default
+
+    # Note: We treat everything as having a dimension of size 0 by default
     @cached_property
-    def log_std_dims(self) -> Dict[str,int]:
+    def log_std_dims(self) -> Dict[str, int]:
         """
         The number of neurons required for the log standard deviation of each branch.
 
@@ -98,12 +115,14 @@ class HybridDistribution(DiagGaussianDistribution):
         Dict[str,int]
             A dictionary mapping branch of the distribution to the number of neurons required for the log standard deviation.
         """
-        log_std_dims = defaultdict(lambda : 0)
+        log_std_dims = defaultdict(lambda: 0)
         for name, dist in self.distributions.items():
-             if isinstance(dist, (DiagGaussianDistribution, StateDependentNoiseDistribution)):
-                 log_std_dims[name] = dist.action_dim
+            if isinstance(
+                dist, (DiagGaussianDistribution, StateDependentNoiseDistribution)
+            ):
+                log_std_dims[name] = dist.action_dim
         return log_std_dims
-    
+
     @cached_property
     def log_std_dim(self) -> int:
         """
@@ -115,10 +134,9 @@ class HybridDistribution(DiagGaussianDistribution):
             The number of neurons required for the log standard deviation.
         """
         return sum(self.log_std_dims.values())
-    
-    
+
     @cached_property
-    def layer_dims(self) -> Dict[str,int]:
+    def layer_dims(self) -> Dict[str, int]:
         """
         The number of neurons required for each branch of the distribution.
 
@@ -129,14 +147,18 @@ class HybridDistribution(DiagGaussianDistribution):
         """
         layer_dims = {}
         for name, dist in self.distributions.items():
-             if isinstance(dist, MultiCategoricalDistribution):
+            if isinstance(dist, MultiCategoricalDistribution):
                 # We take in OneHot but output discrete value so action gets length and layer gets sum
-                layer_dims[name] = sum(dist.action_dims) 
-             else:
-                #not all of the classes use action_dim or action_dims, so try both
-                layer_dims[name] = dist.action_dims if hasattr(dist,"action_dims") else dist.action_dim
+                layer_dims[name] = sum(dist.action_dims)
+            else:
+                # not all of the classes use action_dim or action_dims, so try both
+                layer_dims[name] = (
+                    dist.action_dims
+                    if hasattr(dist, "action_dims")
+                    else dist.action_dim
+                )
         return layer_dims
-    
+
     @cached_property
     def layer_dim(self) -> int:
         """
@@ -151,20 +173,35 @@ class HybridDistribution(DiagGaussianDistribution):
 
     def proba_distribution_net(self, latent_dim, log_std_init: float = 0.0):
         mean_actions = nn.Linear(latent_dim, self.layer_dim)
-        log_std = nn.Parameter(th.ones(self.log_std_dim) * log_std_init, requires_grad=True)
+        log_std = nn.Parameter(
+            th.ones(self.log_std_dim) * log_std_init, requires_grad=True
+        )
         return mean_actions, log_std
-  
+
     def proba_distribution(self, mean_actions: th.Tensor, log_std: th.Tensor):
         action_view_start = 0
         log_std_view_start = 0
         for name, dist in self.distributions.items():
-            #Note this is a closure to make life easier
-            if isinstance(dist, (DiagGaussianDistribution, StateDependentNoiseDistribution)):
-                dist.proba_distribution(mean_actions[:, action_view_start:action_view_start+self.layer_dims[name]], 
-                                        log_std[log_std_view_start:log_std_view_start+self.log_std_dims[name]])
+            # Note this is a closure to make life easier
+            if isinstance(
+                dist, (DiagGaussianDistribution, StateDependentNoiseDistribution)
+            ):
+                dist.proba_distribution(
+                    mean_actions[
+                        :, action_view_start : action_view_start + self.layer_dims[name]
+                    ],
+                    log_std[
+                        log_std_view_start : log_std_view_start
+                        + self.log_std_dims[name]
+                    ],
+                )
             else:
-                dist.proba_distribution(mean_actions[:, action_view_start:action_view_start+self.layer_dims[name]])
-            #see log_std_dims for why this is valid
+                dist.proba_distribution(
+                    mean_actions[
+                        :, action_view_start : action_view_start + self.layer_dims[name]
+                    ]
+                )
+            # see log_std_dims for why this is valid
             action_view_start += self.layer_dims[name]
             log_std_view_start += self.log_std_dims[name]
         return self
@@ -183,21 +220,31 @@ class HybridDistribution(DiagGaussianDistribution):
         -------
         th.Tensor
             The sub-action corresponding to a branch of the distribution.
-        
+
         """
         action_view_start = 0
-        for name,dist in self.distributions.items():
-            curr_action = action[:, action_view_start : action_view_start+self.action_dims[name]]
+        for name, dist in self.distributions.items():
+            curr_action = action[
+                :, action_view_start : action_view_start + self.action_dims[name]
+            ]
             if isinstance(dist, CategoricalDistribution):
-                curr_action = curr_action.view(-1) # Get rid of any non-batch dimensions
+                curr_action = curr_action.view(
+                    -1
+                )  # Get rid of any non-batch dimensions
             yield curr_action
             action_view_start += self.action_dims[name]
         return
 
     def log_prob(self, actions) -> th.Tensor:
-        return reduce(lambda x,y:x+y, map(lambda x: x[1].log_prob(x[0]), zip(self.action_generator(actions), self.distributions.values())))
+        return reduce(
+            lambda x, y: x + y,
+            map(
+                lambda x: x[1].log_prob(x[0]),
+                zip(self.action_generator(actions), self.distributions.values()),
+            ),
+        )
 
-    def map_dists(self, func: Callable[[Distribution],Any], normalize:bool=False):
+    def map_dists(self, func: Callable[[Distribution], Any], normalize: bool = False):
         """
         Maps a function over the distributions in the composite distribution.
 
@@ -209,44 +256,79 @@ class HybridDistribution(DiagGaussianDistribution):
             Whether to normalize the output of the function using the norm factors, by default False
 
         """
+
         def _inner(key):
             dist = self.distributions[key]
             result = func(dist)
             if normalize:
-                if isinstance(dist, (CategoricalDistribution, MultiCategoricalDistribution, BernoulliDistribution)):
+                if isinstance(
+                    dist,
+                    (
+                        CategoricalDistribution,
+                        MultiCategoricalDistribution,
+                        BernoulliDistribution,
+                    ),
+                ):
                     result = result * self._discrete_norm_factor
-                elif isinstance(dist, (DiagGaussianDistribution, StateDependentNoiseDistribution)):
+                elif isinstance(
+                    dist, (DiagGaussianDistribution, StateDependentNoiseDistribution)
+                ):
                     # handle log_std boys
                     result = result * self._continuous_norm_factor
             return result
+
         return map(_inner, self.distributions)
 
     def entropy(self) -> th.Tensor:
-        entropy = reduce(lambda x,y:x+y, self.map_dists(lambda x: x.entropy(), True))
+        entropy = reduce(
+            lambda x, y: x + y, self.map_dists(lambda x: x.entropy(), True)
+        )
         return entropy
 
-    #returns [1xN] where N is total size of Flattened Distributions
+    # returns [1xN] where N is total size of Flattened Distributions
     def sample(self) -> th.Tensor:
-        output = th.cat([sample for sample in self.map_dists(lambda x: reshape_nonbatch(x.sample()))], dim=1)
+        output = th.cat(
+            [
+                sample
+                for sample in self.map_dists(lambda x: reshape_nonbatch(x.sample()))
+            ],
+            dim=1,
+        )
         return output
 
     def mode(self):
-        mode = th.cat([mode for mode in self.map_dists(lambda dist: reshape_nonbatch(dist.mode()))], dim=1)
+        mode = th.cat(
+            [
+                mode
+                for mode in self.map_dists(lambda dist: reshape_nonbatch(dist.mode()))
+            ],
+            dim=1,
+        )
         return mode
 
-    #no changes vs DiagGaussianDistribution but kept incase there are later
-    def actions_from_params(self, action_logits: th.Tensor, log_std:th.Tensor, deterministic:bool = False) -> th.Tensor:
+    # no changes vs DiagGaussianDistribution but kept incase there are later
+    def actions_from_params(
+        self, action_logits: th.Tensor, log_std: th.Tensor, deterministic: bool = False
+    ) -> th.Tensor:
         self.proba_distribution(action_logits, log_std)
         return self.get_actions(deterministic=deterministic)
 
-    def log_prob_from_params(self, mean_actions: th.Tensor, log_std: th.Tensor) -> Tuple[th.Tensor, th.Tensor]:
+    def log_prob_from_params(
+        self, mean_actions: th.Tensor, log_std: th.Tensor
+    ) -> Tuple[th.Tensor, th.Tensor]:
         actions = self.actions_from_params(mean_actions, log_std)
         return actions, self.log_prob(actions)
 
 
 cached_make_proba_dist = make_proba_distribution
 
-def make_hybrid_dist(action_space: spaces.Dict, use_sde:bool = False, discrete_norm_factor = 1.0, continuous_norm_factor = 1.0):
+
+def make_hybrid_dist(
+    action_space: spaces.Dict,
+    use_sde: bool = False,
+    discrete_norm_factor=1.0,
+    continuous_norm_factor=1.0,
+):
     """
     Create a hybrid distribution from a dictionary of action spaces.
 
@@ -261,46 +343,60 @@ def make_hybrid_dist(action_space: spaces.Dict, use_sde:bool = False, discrete_n
     continuous_norm_factor : float, optional
         The normalization factor for continuous actions, by default 1.0
     """
-    distributions = OrderedDict([(key, cached_make_proba_dist(action_space[key], use_sde)) for key in action_space])
-    return HybridDistribution(distributions, discrete_norm_factor, continuous_norm_factor)
+    distributions = OrderedDict(
+        [
+            (key, cached_make_proba_dist(action_space[key], use_sde))
+            for key in action_space
+        ]
+    )
+    return HybridDistribution(
+        distributions, discrete_norm_factor, continuous_norm_factor
+    )
 
-def patched_with_norm(discrete_norm_factor = 1.0, continuous_norm_factor = 1.0):
+
+def patched_with_norm(discrete_norm_factor=1.0, continuous_norm_factor=1.0):
     def patched_make_proba_dist(action_space, use_sde=False, dist_kwargs=None):
-        if isinstance(action_space,spaces.Dict):
-            return make_hybrid_dist(action_space, use_sde, discrete_norm_factor, continuous_norm_factor)
+        if isinstance(action_space, spaces.Dict):
+            return make_hybrid_dist(
+                action_space, use_sde, discrete_norm_factor, continuous_norm_factor
+            )
         else:
             return cached_make_proba_dist(action_space, use_sde, dist_kwargs)
+
     return patched_make_proba_dist
+
 
 # Below code is adapted from https://github.com/DLR-RM/stable-baselines3/blob/master/stable_baselines3/common/callbacks.py
 
-#The MIT License
+# The MIT License
 #
-#Copyright (c) 2019 Antonin Raffin
+# Copyright (c) 2019 Antonin Raffin
 #
-#Permission is hereby granted, free of charge, to any person obtaining a copy
-#of this software and associated documentation files (the "Software"), to deal
-#in the Software without restriction, including without limitation the rights
-#to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-#copies of the Software, and to permit persons to whom the Software is
-#furnished to do so, subject to the following conditions:
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
 #
-#The above copyright notice and this permission notice shall be included in
-#all copies or substantial portions of the Software.
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
 #
-#THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-#IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-#FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-#AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-#LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-#OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-#THE SOFTWARE.
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
 
 # Modifications Copyright (c) 2023 Advanced Micro Devices, Inc. All Rights Reserved.
 
+
 class PatchedPPO(PPO):
 
-    def __init__(self,
+    def __init__(
+        self,
         policy: Union[str, Type[ActorCriticPolicy]],
         env: Union[GymEnv, str],
         learning_rate: Union[float, Schedule] = 3e-4,
@@ -351,10 +447,10 @@ class PatchedPPO(PPO):
                 spaces.Discrete,
                 spaces.MultiDiscrete,
                 spaces.MultiBinary,
-                spaces.Dict
+                spaces.Dict,
             ),
         )
-        
+
         # Sanity check, otherwise it will lead to noisy gradient and NaN
         # because of the advantage normalization
         if normalize_advantage:
@@ -388,20 +484,23 @@ class PatchedPPO(PPO):
         self.target_kl = target_kl
 
         if _init_setup_model:
-            PPO._setup_model(self)  
+            PPO._setup_model(self)
+
 
 # End of Adapted Code
 
 
 cached_get_action_dim = preprocessing.get_action_dim
+
+
 def patched_get_action_dim(action_space):
-    if(isinstance(action_space, spaces.Dict)):
+    if isinstance(action_space, spaces.Dict):
         print("using hybrid action dist")
         return sum([cached_get_action_dim(action_space[key]) for key in action_space])
     else:
         return cached_get_action_dim(action_space)
 
-               
+
 class ActionSpacePatch:
     """
     A context manager that patches the stable baselines3 library to support custom action spaces.
@@ -417,7 +516,7 @@ class ActionSpacePatch:
         The normalization factor for discrete actions, by default 1.0
     continuous_norm_factor : float, optional
         The normalization factor for continuous actions, by default 1.0
-    
+
     Attributes
     ----------
     globs : Dict
@@ -427,7 +526,8 @@ class ActionSpacePatch:
     _discrete_norm_factor : float
         The normalization factor for discrete actions.
     """
-    def __init__(self, globs, discrete_norm_factor = 1.0, continuous_norm_factor = 1.0):
+
+    def __init__(self, globs, discrete_norm_factor=1.0, continuous_norm_factor=1.0):
         self.globs = globs
         self._continuous_norm_factor = continuous_norm_factor
         self._discrete_norm_factor = discrete_norm_factor
@@ -436,13 +536,14 @@ class ActionSpacePatch:
         """
         Patch the stable baselines3 library to support custom action spaces.
         """
-       
-        policies.__dict__["make_proba_distribution"] = patched_with_norm(self._discrete_norm_factor, self._continuous_norm_factor)
+
+        policies.__dict__["make_proba_distribution"] = patched_with_norm(
+            self._discrete_norm_factor, self._continuous_norm_factor
+        )
 
         self.globs["PPO"] = PatchedPPO
 
         buffers.__dict__["get_action_dim"] = patched_get_action_dim
-       
 
     def __exit__(self, type, value, traceback):
         """

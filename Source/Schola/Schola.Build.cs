@@ -25,7 +25,7 @@ public class Schola : ModuleRules
             "Networking",
             "gRPC",
             "DeveloperSettings",
-            "NNE",
+            "NNE","Json", "JsonUtilities"
         });
 
         PrivateIncludePathModuleNames.AddRange(new string[] { });

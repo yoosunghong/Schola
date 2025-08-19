@@ -13,7 +13,6 @@ import numpy as np
 import logging
 
 
-
 class UnrealSpace:
     """
     A base class for all spaces in Schola, providing a common interface for converting between protobuf messages and pythonic representations.
@@ -27,7 +26,10 @@ class UnrealSpace:
     --------
     gymnasium.spaces.Space : The gym space object that this class is analogous to.
     """
-    proto_space : Type[proto_spaces.FundamentalSpace] = None #: A class variable containing the protobuf representation of the space.
+
+    proto_space: Type[proto_spaces.FundamentalSpace] = (
+        None  #: A class variable containing the protobuf representation of the space.
+    )
 
     @classmethod
     def from_proto(cls, message) -> "UnrealSpace":
@@ -38,7 +40,7 @@ class UnrealSpace:
         ----------
         message : proto_space
             The protobuf message to convert.
-        
+
         Returns
         -------
         UnrealSpace
@@ -55,7 +57,7 @@ class UnrealSpace:
         ----------
         message : proto_space
             The protobuf message to check for emptiness.
-        
+
         Returns
         -------
         bool
@@ -63,7 +65,7 @@ class UnrealSpace:
         """
         ...
 
-    def process_data(self, msg : proto_points.FundamentalPoint) -> np.ndarray:
+    def process_data(self, msg: proto_points.FundamentalPoint) -> np.ndarray:
         """
         Convert a protobuf message corresponding to a point in this space to a pythonic representation.
 
@@ -71,7 +73,7 @@ class UnrealSpace:
         ----------
         msg : proto_points.FundamentalPoint
             The protobuf message to convert.
-        
+
         Returns
         -------
         np.ndarray
@@ -79,7 +81,7 @@ class UnrealSpace:
         """
         ...
 
-    def fill_proto(self, msg : proto_points.FundamentalPoint, value: Any) -> None:
+    def fill_proto(self, msg: proto_points.FundamentalPoint, value: Any) -> None:
         """
         Convert a python representation of point in this space to a protobuf message. Mutates msg with the result.
 
@@ -102,16 +104,16 @@ class UnrealSpace:
             The normalized space.
         """
         return self
-    
+
     def __len__(self) -> int:
         """
         Returns the length of the space.
         """
         ...
-    
+
     @classmethod
-    def merge(cls, *spaces : List["UnrealSpace"]) -> "UnrealSpace":
-        ...
+    def merge(cls, *spaces: List["UnrealSpace"]) -> "UnrealSpace": ...
+
 
 def get_space_shape_as_int(space: Space) -> int:
     """
@@ -121,7 +123,7 @@ def get_space_shape_as_int(space: Space) -> int:
     ----------
     space : Space
         The space to get the shape of.
-    
+
     Returns
     -------
     int
@@ -134,7 +136,7 @@ def get_space_shape_as_int(space: Space) -> int:
         return sum(space.shape)
 
 
-def merge_space_shape(spaces : List[Space]) -> Tuple[int]:
+def merge_space_shape(spaces: List[Space]) -> Tuple[int]:
     """
     Merge the shapes of multiple spaces into a single shape.
 
@@ -142,7 +144,7 @@ def merge_space_shape(spaces : List[Space]) -> Tuple[int]:
     ----------
     spaces : List[Space]
         The spaces to merge.
-    
+
     Returns
     -------
     Tuple[int]

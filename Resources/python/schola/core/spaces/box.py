@@ -10,6 +10,7 @@ import schola.generated.Points_pb2 as proto_points
 import numpy as np
 from .base import UnrealSpace
 
+
 class BoxSpace(gymnasium.spaces.Box, UnrealSpace):
     """
     A Space representing a box in n-dimensional space.
@@ -22,12 +23,12 @@ class BoxSpace(gymnasium.spaces.Box, UnrealSpace):
         The upper bounds of the box.
     shape : Tuple[int], optional
         The shape of the space.
-    
+
     Attributes
     ----------
     shape : Tuple[int]
         The shape of the space.
-    
+
     Note
     ----
     Unlike, the gymnasium Box space, this class does not have a dtype attribute. The dtype is always np.float32.
@@ -37,24 +38,30 @@ class BoxSpace(gymnasium.spaces.Box, UnrealSpace):
     gymnasium.spaces.Box : The gym space object that this class is analogous to.
     proto_spaces.BoxSpace : The protobuf representation of this space.
     """
+
     proto_space = proto_spaces.BoxSpace
     _name = "box_space"
 
-    def __init__(self, low:Union[float, np.ndarray,List[float]], high:Union[float, np.ndarray,List[float]],shape:Optional[Tuple[int]]=None):
+    def __init__(
+        self,
+        low: Union[float, np.ndarray, List[float]],
+        high: Union[float, np.ndarray, List[float]],
+        shape: Optional[Tuple[int]] = None,
+    ):
         if isinstance(low, list):
             low = np.asarray(low, dtype=np.float32)
         if isinstance(high, list):
             high = np.asarray(high, dtype=np.float32)
-        super().__init__(low=low, high=high,shape=shape)
+        super().__init__(low=low, high=high, shape=shape)
 
     @classmethod
-    def from_proto(cls, message : proto_spaces.BoxSpace) -> "BoxSpace":
+    def from_proto(cls, message: proto_spaces.BoxSpace) -> "BoxSpace":
         low = []
         high = []
         for dimension in message.dimensions:
             low.append(dimension.low)
             high.append(dimension.high)
-        if(len(message.shape_dimensions) == 0):
+        if len(message.shape_dimensions) == 0:
             shape = [len(low)]
         else:
             shape = tuple(message.shape_dimensions)
@@ -63,7 +70,7 @@ class BoxSpace(gymnasium.spaces.Box, UnrealSpace):
         return BoxSpace(low=low, high=high, shape=shape)
 
     @classmethod
-    def is_empty_definition(cls, message : proto_spaces.BoxSpace) -> bool:
+    def is_empty_definition(cls, message: proto_spaces.BoxSpace) -> bool:
         return len(list(message.dimensions)) == 0
 
     def fill_proto(self, msg: proto_points.FundamentalPoint, values):
@@ -77,7 +84,7 @@ class BoxSpace(gymnasium.spaces.Box, UnrealSpace):
         -------
         BoxSpace
             The normalized space. A modified version of the space this method is called on
-        
+
         Examples
         --------
         >>> space = BoxSpace([0, 0],[2, 2])
@@ -89,7 +96,7 @@ class BoxSpace(gymnasium.spaces.Box, UnrealSpace):
         return self
 
     @classmethod
-    def merge(cls,*spaces: List["BoxSpace"]) -> "BoxSpace":
+    def merge(cls, *spaces: List["BoxSpace"]) -> "BoxSpace":
         """
         Merge multiple BoxSpaces into a single space.
 
@@ -97,17 +104,17 @@ class BoxSpace(gymnasium.spaces.Box, UnrealSpace):
         ----------
         *spaces : List[BoxSpace]
             The spaces to merge.
-        
+
         Returns
         -------
         BoxSpace
             The merged space.
-        
+
         Raises
         ------
         TypeError
             If any of the spaces are not BoxSpaces.
-        
+
         Examples
         --------
         >>> merged_space = BoxSpace.merge(BoxSpace([0,0],[1,1]), BoxSpace([2,2],[3,3]))
@@ -115,12 +122,12 @@ class BoxSpace(gymnasium.spaces.Box, UnrealSpace):
         True
         """
         for space in spaces:
-            if not isinstance(space,gymnasium.spaces.Box):
+            if not isinstance(space, gymnasium.spaces.Box):
                 raise TypeError(f"Cannot merge BoxSpace with {type(space)}")
         low = np.concatenate([space.low for space in spaces])
         high = np.concatenate([space.high for space in spaces])
         # Try and merge on the first axis
-        return BoxSpace(low,high)
+        return BoxSpace(low, high)
 
     def __len__(self) -> int:
         """
@@ -130,7 +137,7 @@ class BoxSpace(gymnasium.spaces.Box, UnrealSpace):
         -------
         int
             The number of dimensions of the space
-        
+
         Examples
         --------
         >>> space = BoxSpace([0,0],[1,1])
@@ -139,6 +146,6 @@ class BoxSpace(gymnasium.spaces.Box, UnrealSpace):
         """
         return self.low.size
 
-    def process_data(self, msg : proto_points.FundamentalPoint) -> np.ndarray:
-        output = np.asarray(msg.box_point.values,dtype=np.float32).reshape(self.shape)
+    def process_data(self, msg: proto_points.FundamentalPoint) -> np.ndarray:
+        output = np.asarray(msg.box_point.values, dtype=np.float32).reshape(self.shape)
         return output

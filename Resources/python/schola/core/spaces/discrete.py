@@ -10,7 +10,10 @@ import numpy as np
 from typing import List, Union
 import gymnasium
 
-def merge_discrete_like_spaces(*spaces: List[Union[gymnasium.spaces.Discrete, gymnasium.spaces.MultiDiscrete]]):
+
+def merge_discrete_like_spaces(
+    *spaces: List[Union[gymnasium.spaces.Discrete, gymnasium.spaces.MultiDiscrete]]
+):
     """
     Merge multiple Discrete or MultiDiscrete spaces into a single MultiDiscrete space.
 
@@ -18,12 +21,12 @@ def merge_discrete_like_spaces(*spaces: List[Union[gymnasium.spaces.Discrete, gy
     ----------
     *spaces : List[Union[gymnasium.spaces.Discrete, gymnasium.spaces.MultiDiscrete]]
         The spaces to merge.
-    
+
     Returns
     -------
     MultiDiscreteSpace
         The merged space.
-    
+
     Raises
     ------
     TypeError
@@ -63,17 +66,18 @@ class DiscreteSpace(gymnasium.spaces.Discrete, UnrealSpace):
     ----------
     n : int
         The number of discrete values in the space. e.g. space is one value in interval [0,n]
-    
+
     Attributes
     ----------
     n : int
         The number of discrete values in the space.
-    
+
     See Also
     --------
     gymnasium.spaces.Discrete : The gym space object that this class is analogous to.
     proto_spaces.DiscreteSpace : The protobuf representation of this space.
     """
+
     proto_space = proto_spaces.DiscreteSpace
     _name = "discrete_space"
 
@@ -84,13 +88,17 @@ class DiscreteSpace(gymnasium.spaces.Discrete, UnrealSpace):
     def is_empty_definition(cls, message: proto_spaces.DiscreteSpace):
         return message.size == 0
 
-    def fill_proto(self, msg: proto_points.FundamentalPoint, value: Union[int, np.ndarray]):
+    def fill_proto(
+        self, msg: proto_points.FundamentalPoint, value: Union[int, np.ndarray]
+    ):
         if not isinstance(value, int):
             value = int(value.item())
         msg.discrete_point.values.append(value)
 
     @classmethod
-    def merge(cls, *spaces: Union["DiscreteSpace","MultiDiscreteSpace"]) -> "MultiDiscreteSpace":
+    def merge(
+        cls, *spaces: Union["DiscreteSpace", "MultiDiscreteSpace"]
+    ) -> "MultiDiscreteSpace":
         """
         Merge multiple DiscreteSpaces into a single space.
 
@@ -98,7 +106,7 @@ class DiscreteSpace(gymnasium.spaces.Discrete, UnrealSpace):
         ----------
         *spaces : List[Union[DiscreteSpace, MultiDiscreteSpace]]
             The spaces to merge.
-        
+
         Returns
         -------
         MultiDiscreteSpace
@@ -108,7 +116,7 @@ class DiscreteSpace(gymnasium.spaces.Discrete, UnrealSpace):
         ------
         TypeError
             If any of the spaces are not Discrete or MultiDiscrete.
-        
+
         See Also
         --------
         merge_discrete_like_spaces : Merge multiple Discrete or MultiDiscrete spaces into a single MultiDiscrete space.
@@ -123,31 +131,31 @@ class DiscreteSpace(gymnasium.spaces.Discrete, UnrealSpace):
 
     def to_normalized(self):
         return self
-    
-    def __eq__(self,other):
+
+    def __eq__(self, other):
         return bool(super().__eq__(other))
-    
 
 
 class MultiDiscreteSpace(gymnasium.spaces.MultiDiscrete, UnrealSpace):
     """
     A Space representing a vector of discrete values.
 
-    Parameters  
+    Parameters
     ----------
     nvec : List[int]
         The number of discrete values in each dimension of the space.
-    
+
     Attributes
     ----------
     nvec : List[int]
         The number of discrete values in each dimension of the space.
-    
+
     See Also
     --------
     gymnasium.spaces.MultiDiscrete : The gym space object that this class is analogous to.
     proto_spaces.MultiDiscreteSpace : The protobuf representation of this space.
     """
+
     proto_space = proto_spaces.DiscreteSpace
     _name = "discrete_space"
 
@@ -164,7 +172,9 @@ class MultiDiscreteSpace(gymnasium.spaces.MultiDiscrete, UnrealSpace):
             return MultiDiscreteSpace(message.high)
 
     @classmethod
-    def merge(cls, *spaces: List[Union["MultiDiscreteSpace", "DiscreteSpace"]]) -> "MultiDiscreteSpace":
+    def merge(
+        cls, *spaces: List[Union["MultiDiscreteSpace", "DiscreteSpace"]]
+    ) -> "MultiDiscreteSpace":
         """
         Merge multiple DiscreteSpaces into a single space.
 
@@ -172,29 +182,31 @@ class MultiDiscreteSpace(gymnasium.spaces.MultiDiscrete, UnrealSpace):
         ----------
         *spaces : List[Union[DiscreteSpace, MultiDiscreteSpace]]
             The spaces to merge.
-        
+
         Returns
         -------
         MultiDiscreteSpace
             The merged space.
-        
+
         Raises
         ------
         TypeError
             If any of the spaces are not Discrete or MultiDiscrete.
-        
+
         See Also
         --------
         merge_discrete_like_spaces : Merge multiple Discrete or MultiDiscrete spaces into a single MultiDiscrete space.
         """
-        return merge_discrete_like_spaces(spaces)
+        return merge_discrete_like_spaces(*spaces)
 
     @classmethod
     def is_empty_definition(cls, message: proto_spaces.DiscreteSpace) -> bool:
         high = list(message.high)
         return len(message.high) == 0
 
-    def fill_proto(self, msg: proto_points.FundamentalPoint, values: np.ndarray) -> None:
+    def fill_proto(
+        self, msg: proto_points.FundamentalPoint, values: np.ndarray
+    ) -> None:
         msg.discrete_point.values.extend([int(value) for value in values])
 
     def process_data(self, msg: proto_points.FundamentalPoint) -> np.ndarray:
@@ -208,7 +220,7 @@ class MultiDiscreteSpace(gymnasium.spaces.MultiDiscrete, UnrealSpace):
         -------
         int
             The number of discrete values in the space.
-        
+
         Examples
         --------
         >>> space = MultiDiscreteSpace([3, 2])

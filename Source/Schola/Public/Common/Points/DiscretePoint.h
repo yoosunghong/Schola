@@ -6,13 +6,12 @@
 #include "Common/Points/PointVisitor.h"
 #include "DiscretePoint.generated.h"
 
-
 USTRUCT(BlueprintType)
 struct SCHOLA_API FDiscretePoint : public FPoint
 {
 	GENERATED_BODY()
 	/** the values of this point */
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category="Point")
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Point")
 	TArray<int> Values;
 
 	/**
@@ -20,7 +19,6 @@ struct SCHOLA_API FDiscretePoint : public FPoint
 	 */
 	FDiscretePoint()
 	{
-
 	}
 
 	/**
@@ -31,7 +29,6 @@ struct SCHOLA_API FDiscretePoint : public FPoint
 	FDiscretePoint(const int* Data, int Num)
 		: Values(Data, Num)
 	{
-
 	}
 
 	/**
@@ -41,7 +38,6 @@ struct SCHOLA_API FDiscretePoint : public FPoint
 	FDiscretePoint(TArray<int>& InitialValues)
 		: Values(InitialValues)
 	{
-
 	}
 
 	/**
@@ -51,17 +47,15 @@ struct SCHOLA_API FDiscretePoint : public FPoint
 	FDiscretePoint(std::initializer_list<int> InitialValues)
 		: Values(InitialValues)
 	{
-
 	}
-	
+
 	virtual ~FDiscretePoint()
 	{
-
 	}
 
-	void Accept(PointVisitor& Visitor);
+	void Accept(PointVisitor& Visitor) override;
 
-	void Accept(ConstPointVisitor& Visitor) const;
+	void Accept(ConstPointVisitor& Visitor) const override;
 
 	/**
 	 * @brief Get the value of the DiscretePoint at the given index or dimension
@@ -73,10 +67,10 @@ struct SCHOLA_API FDiscretePoint : public FPoint
 		return this->Values[Index];
 	}
 
-	/** 
+	/**
 	 * @brief Reset the values of the DiscretePoint. Clears the current values
 	 * @note This is doesn't reset the size of the array so subsequent calls to Add will not reallocate memory
-	*/
+	 */
 	void Reset() override
 	{
 		this->Values.Reset(this->Values.Num());
@@ -89,5 +83,23 @@ struct SCHOLA_API FDiscretePoint : public FPoint
 	void Add(int Value)
 	{
 		this->Values.Add(Value);
+	}
+
+	/**
+	 * @brief Convert this point to a string representation
+	 * @return A string representation of this point
+	 */
+	FString ToString() const override
+	{
+		FString Result = TEXT("");
+		for (int i = 0; i < this->Values.Num(); i++)
+		{
+			Result += FString::Printf(TEXT("%d"), this->Values[i]);
+			if (i != this->Values.Num() - 1)
+			{
+				Result += TEXT(", ");
+			}
+		}
+		return Result;
 	}
 };

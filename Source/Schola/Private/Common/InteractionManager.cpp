@@ -18,6 +18,13 @@ void UInteractionManager::CollectObservationsFromObservers(const TArray<UAbstrac
 	{
 		TPoint& ObservationRef = OutObservationsMap.Add();
 		Observer->CollectObservations(ObservationRef);
+
+		FTrajectoryData Data;
+
+		Data.InteractorName = Observer->GetSanitizedId();
+		Data.Value = Visit([](auto& Point) { return Point.ToString(); }, ObservationRef);
+
+		this->TrajectoryStep.Observations.Add(Data);
 	}
 };
 
@@ -53,10 +60,8 @@ void UInteractionManager::SetupActuators(const TArray<UActuator*>& InActuators, 
 		Actuator->InitializeActuator();
 		OutActuators.Add(Actuator);
 	}
-	//Put the Actuators in alphabetical order
+	// Put the Actuators in alphabetical order
 	OutActuators.Sort([](UActuator& A, UActuator& B) { return A.GetSanitizedId() < B.GetSanitizedId(); });
-
-
 }
 
 void UInteractionManager::SendActionsToActuators(TArray<UActuator*>& OutActuators, const FDictPoint& Actions)
@@ -65,6 +70,15 @@ void UInteractionManager::SendActionsToActuators(TArray<UActuator*>& OutActuator
 
 	for (UActuator* Actuator : OutActuators)
 	{
+
+		FTrajectoryData Data;
+
+		Data.InteractorName = Actuator->GetSanitizedId();
+		Data.Value = Visit([](auto& Point) { return Point.ToString(); }, Actions[Id]);
+
+		this->TrajectoryStep.Actions.Add(Data);
+
+		// Send the action to the actuator
 		Actuator->TakeAction(Actions[Id++]);
 	}
 };
@@ -106,7 +120,6 @@ void UInteractionManager::Initialize(TArray<UAbstractObserver*>& InObservers, TA
 	// Collect all the attached Actuators
 	SetupActuators(InActuators, this->Actuators);
 	CollectActionSpaceFromActuators(this->Actuators, this->InteractionDefn.ActionSpaceDefn);
-
 }
 
 void UInteractionManager::DistributeActions(const FDictPoint& ActionMap)
@@ -138,5 +151,4 @@ void UInteractionManager::Reset()
 	{
 		Actuator->Reset();
 	}
-
 }

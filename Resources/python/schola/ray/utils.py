@@ -1,6 +1,8 @@
 # Copyright (c) 2024 Advanced Micro Devices, Inc. All Rights Reserved.
 
 """
+Utilities for Working With Ray (e.g. Exporting, and Image Handling)
+
 Code in this file is adapted from
 https://github.com/ray-project/ray/blob/master/rllib/policy/torch_policy_v2.py
 
@@ -20,10 +22,6 @@ limitations under the License.
 """
 # Modifications Copyright (c) 2024-2025 Advanced Micro Devices, Inc. All Rights Reserved.
 
-
-"""
-Utility functions for working with ray and rllib.
-"""
 from ray.rllib.models.torch.torch_modelv2 import TorchModelV2
 from ray.rllib.utils.annotations import override
 import torch.nn as nn
@@ -35,20 +33,21 @@ import torch as th
 from ray.rllib.policy.sample_batch import SampleBatch
 import os
 import numpy as np
-from schola.core.utils import ScholaModel
+from schola.core.model import ScholaModel
 import gymnasium as gym
 from ray.rllib.utils.spaces.space_utils import (
     get_dummy_batch_for_space,
 )
 from ray.rllib.models.modelv2 import restore_original_dimensions
 import gymnasium as gym
-from gymnasium import spaces 
+from gymnasium import spaces
 import numpy as np
 import copy
 from schola.core.env import EnvAgentIdDict
 from ray.rllib.env.base_env import BaseEnv as RayBaseEnv
 from schola.ray.env import BaseEnv
 from typing import Any, List, Optional, Tuple, Dict, Union
+
 
 @singledispatch
 def export_onnx_from_policy(arg, path: str, policy_name=None):
@@ -126,7 +125,6 @@ class RLLibScholaModel(ScholaModel):
         curr_dim = 0
         for space_name, space in self._model.action_space.items():
             space_size = flatdim(space)
-            print(curr_dim, curr_dim + space_size)
             # remove the extra dimensions containing variance etc from the outputs
             if isinstance(space, Box):
                 outputs.append(logits[:, curr_dim : curr_dim + space_size])
@@ -196,6 +194,7 @@ class RLLibScholaModel(ScholaModel):
             dynamic_axes={k: {0: "batch_size"} for k in input_names},
         )
 
+
 class MultiAgentTransposeImageWrapper(RayBaseEnv):
     def __init__(self, env: BaseEnv):
         """
@@ -247,10 +246,7 @@ class MultiAgentTransposeImageWrapper(RayBaseEnv):
                 high = np.transpose(high, (1, 2, 0))
 
             new_image_box_space = spaces.Box(
-                low=low,
-                high=high,
-                shape=new_image_shape,
-                dtype=image_obs_space.dtype
+                low=low, high=high, shape=new_image_shape, dtype=image_obs_space.dtype
             )
 
             # Update the agent's observation space
@@ -273,10 +269,10 @@ class MultiAgentTransposeImageWrapper(RayBaseEnv):
         Dict
             The transposed observations with the same structure.
         """
-    
+
         # Create a deep copy once
         new_observations = copy.deepcopy(observations)
-    
+
         # Perform the transpositions in-place on the copied structure
         for env_id in new_observations:
             for agent_id, agent_obs in new_observations[env_id].items():
@@ -285,25 +281,27 @@ class MultiAgentTransposeImageWrapper(RayBaseEnv):
                     # Check if the image key exists in this agent's observations
                     if image_key in agent_obs:
                         # Transpose the image observation from (C,H,W) to (H,W,C)
-                        agent_obs[image_key] = np.transpose(agent_obs[image_key], (1, 2, 0))
-    
+                        agent_obs[image_key] = np.transpose(
+                            agent_obs[image_key], (1, 2, 0)
+                        )
+
         return new_observations
 
     @property
     def observation_space(self):
         """Return the modified observation space with transposed image shapes."""
         return self._observation_space
-        
+
     @property
     def action_space(self):
         """Return the action space of the wrapped environment."""
         return self.env.action_space
-        
+
     @property
     def unwrapped(self):
         """Return the unwrapped environment."""
         return self.env.unwrapped
-    
+
     @property
     def num_envs(self) -> int:
         """Return the number of environments."""
@@ -312,7 +310,7 @@ class MultiAgentTransposeImageWrapper(RayBaseEnv):
     def send_actions(self, action_dict: EnvAgentIdDict[Dict[str, Any]]) -> None:
         """Send actions to the wrapped environment."""
         self.env.send_actions(action_dict)
-    
+
     def try_reset(
         self,
         env_id: Optional[int] = None,
@@ -322,11 +320,11 @@ class MultiAgentTransposeImageWrapper(RayBaseEnv):
         """Try to reset the wrapped environment."""
         obs, infos = self.env.try_reset(env_id, seed, options)
         return self._transpose_observations(obs), infos
-    
+
     def stop(self) -> None:
         """Stop the wrapped environment."""
         self.env.stop()
-    
+
     def poll(
         self,
     ) -> Tuple[
@@ -338,6 +336,14 @@ class MultiAgentTransposeImageWrapper(RayBaseEnv):
         EnvAgentIdDict[Any],
     ]:
         """Poll the wrapped environment and transpose the observations."""
-        obs, rewards, terminateds, truncateds, infos, off_policy_actions = self.env.poll()
-        return self._transpose_observations(obs), rewards, terminateds, truncateds, infos, off_policy_actions
-
+        obs, rewards, terminateds, truncateds, infos, off_policy_actions = (
+            self.env.poll()
+        )
+        return (
+            self._transpose_observations(obs),
+            rewards,
+            terminateds,
+            truncateds,
+            infos,
+            off_policy_actions,
+        )

@@ -109,12 +109,12 @@ public:
 	/**
 	 * @brief The agent retrieves an action from the brain before taking an action.
 	 */
-	void Act();
+	virtual void Act();
 
 	/**
 	 * @brief Update the state of the agent. This checks if the agent is done, what its reward should be, and does any observation collection before requesting a decision.
 	 */
-	void Think();
+	virtual void Think();
 
 	/**
 	 * @brief Register default tick functions for Think and Act.
@@ -140,7 +140,7 @@ struct FThinkTickFunction : public FTickFunction
 	 */
 	FThinkTickFunction(IInferenceAgent* Agent);
 
-		FThinkTickFunction()
+	FThinkTickFunction()
 		: Super()
 	{
 	}
@@ -192,7 +192,7 @@ struct FActTickFunction : public FTickFunction
 	 */
 	FActTickFunction(IInferenceAgent* Agent, bool bStopAfterCurrentTick = false);
 
-		FActTickFunction()
+	FActTickFunction()
 		: Super()
 	{
 	}

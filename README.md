@@ -4,25 +4,43 @@ The Schola project is an effort to build a toolkit/plugin for controlling Object
 ## Getting Started
 
 ### Install Unreal Engine
+As Schola is an Unreal Engine Project, you will need to first install Unreal Engine. Refer to the below table to identify the correct version of Unreal Engine for each version of Schola. 
 
-Release 1.0 of this this project is designed for Unreal Engine 5.4 which is available for [Download](https://www.unrealengine.com/en-US/download) and is tested on 5.4.3 and 5.4.4. Release 1.1 supports Unreal Engine 5.5 (It is not compatible with Unreal Engine 5.4).
+>**Note**
+> Each Schola release may be compatible with other versions of Unreal Engine beyond the ones listed here, however these are the version(s) tested for each release.
+
+| Schola version | Unreal Version |
+| -------------- | -------------- |
+| 1.3 | 5.5-5.6 |
+| 1.2 | 5.5 |
+| 1.1 | 5.5 |
+| 1.0 | 5.4 |
 
 
 > **Important for Visual Studio Users**
 > Only MSVC v143 Build Tools should be selected during install including other build tools will cause linking errors. Sepcifically, use `MSVC14.X` where `X>34` from Visual Studio 2022, and `Windows 10.0.22621.0 SDK` to avoid linking errors
 
 ### Installing Schola Into Your Project
-To use schola in an existing Unreal Engine Project  copy this repository to the `/Plugins` folder of your project, and pip install the schola python package in `/Resources/python`
+To use schola in an existing Unreal Engine Project copy this repository to the `/Plugins` folder of your project, and pip install the schola python package in `/Resources/python` using `pip install -e <path to folder containing setup.py>[all]`
 
 ### Dependencies
 
 #### Python
 
-See `setup.py` for python dependencies. Installing schola via pip will automatically install all python dependencies.
+See `setup.py` for a comprehensive list of dependencies. The following flags are available when installing via pip:
+
+| Flag | Desc |
+| ---- | ---- |
+| "sb3" | Installs dependencies for running training with StableBaselines 3 |
+| "rllib" | Installs dependencies for running training with RLlib |
+| "imitation" | Installs dependencies for doing imitation learning with the imitation library, includes sb3. |
+| "all" | shortcut for setting sb3, rllib and imitation flags. |
+| "docs" | Installs dependencies for building documentation with Sphinx |
+| "test" | Intalls pytest and dependencies for running the tests |
 
 #### C++
 
-All C++ dependencies for using Schola are bundled with the plugin under `/Source/ThirdParty`.
+All C++ dependencies for using Schola are bundled with the plugin under `/Source/ThirdParty` and do not need to be installed separately. These consist of `gRPC`, `protobuf` and `absl`(dependency of gRPC).
 
 ## Build and Test
 

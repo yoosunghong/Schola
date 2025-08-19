@@ -100,8 +100,9 @@ documentation/*.bkp
 *.egg-info/
 *.egg
 
-#Training checkpoints
+#Training checkpoints and logs
 **/ckpt/*
+**/logs/*
 
 #Built documentation
 /Docs/Doxygen/html/*

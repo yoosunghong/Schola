@@ -16,6 +16,7 @@ from .binary import MultiBinarySpace
 from .box import BoxSpace
 from .base import get_space_shape_as_int, merge_space_shape
 
+
 class DictSpace(gymnasium.spaces.Dict):
     """
     A Space representing a dictionary of spaces.
@@ -24,12 +25,12 @@ class DictSpace(gymnasium.spaces.Dict):
     ----------
     space_dict : Dict[str, gymnasium.spaces.Space]
         The dictionary of spaces to be represented.
-    
+
     Attributes
     ----------
     spaces : Dict[str, gymnasium.spaces.Space]
         The dictionary of spaces represented by this object.
-    
+
     See Also
     --------
     gymnasium.spaces.Dict : The gym space object that this class is analogous to.
@@ -53,7 +54,7 @@ class DictSpace(gymnasium.spaces.Dict):
         -------
         Dict[str, Tuple[int]]
             A dictionary of the shapes of the subspaces in the dictionary space
-        
+
         Examples
         --------
         >>> space = DictSpace({"a": BoxSpace(0, 1, shape=(2,)), "b": DiscreteSpace(3)})
@@ -69,7 +70,6 @@ class DictSpace(gymnasium.spaces.Dict):
     def from_proto(cls, message):
         subspace_dict = OrderedDict()
         for name,value in zip(message.labels,message.values):
-            #TODO clean this up
             if value.HasField(BoxSpace._name):
                 new_entry = BoxSpace.from_proto(value.box_space)
             elif value.HasField(DiscreteSpace._name):
@@ -78,7 +78,6 @@ class DictSpace(gymnasium.spaces.Dict):
                 new_entry = MultiBinarySpace.from_proto(value.binary_space)
             subspace_dict[name] = new_entry
         return DictSpace(subspace_dict)
-                
 
     def to_normalized(self):
         """
@@ -99,9 +98,12 @@ class DictSpace(gymnasium.spaces.Dict):
             value.to_normalized()
         return self
 
-    def process_data(self, msg : proto_points.DictPoint):
-        return {name: space.process_data(point_msg) for name, space, point_msg in zip(*zip(*self.spaces.items()), msg.values)}
-    
+    def process_data(self, msg: proto_points.DictPoint):
+        return {
+            name: space.process_data(point_msg)
+            for name, space, point_msg in zip(*zip(*self.spaces.items()), msg.values)
+        }
+
     @property
     def has_only_one_fundamental_type(self):
         """
@@ -127,17 +129,17 @@ class DictSpace(gymnasium.spaces.Dict):
         True
         """
         fundamental_type = None
-        for key,value in self.spaces.items():
+        for key, value in self.spaces.items():
             if fundamental_type is None:
                 fundamental_type = type(value)
-            elif fundamental_type in [DiscreteSpace,MultiDiscreteSpace]:
-                if not isinstance(value,(DiscreteSpace,MultiDiscreteSpace)):
+            elif fundamental_type in [DiscreteSpace, MultiDiscreteSpace]:
+                if not isinstance(value, (DiscreteSpace, MultiDiscreteSpace)):
                     return False
             else:
-                 if not isinstance(value,fundamental_type):
+                if not isinstance(value, fundamental_type):
                     return False
         return True
-    
+
     def simplify(self) -> UnrealSpace:
         """
         Simplify the dictionary space by merging subspaces of the same fundamental type, if possible.
@@ -161,17 +163,14 @@ class DictSpace(gymnasium.spaces.Dict):
         >>> space.simplify()
         Discrete(4)
         """
-        #Only one space so simplify to it
-        if(len(self.spaces) == 1):
+        # Only one space so simplify to it
+        if len(self.spaces) == 1:
             return next(iter(self.spaces.values()))
-        
-        #We can merge matching spaces
-        elif(self.has_only_one_fundamental_type):
+
+        # We can merge matching spaces
+        elif self.has_only_one_fundamental_type:
             spaces = list(self.spaces.values())
             return type(spaces[0]).merge(*spaces)
-        
+
         else:
             return self
-        
-                
-                

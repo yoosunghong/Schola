@@ -7,6 +7,7 @@ from ray.rllib.policy.policy import Policy
 from schola.ray.utils import export_onnx_from_policy
 from argparse import ArgumentParser
 
+
 def make_parser():
     parser = ArgumentParser(prog="Ray-to-Unreal Onnx Parser")
 
@@ -14,6 +15,7 @@ def make_parser():
     parser.add_argument("--output-path", type=str, default=None)
 
     return parser
+
 
 if __name__ == "__main__":
     parser = make_parser()

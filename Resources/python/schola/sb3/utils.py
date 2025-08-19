@@ -18,7 +18,7 @@ from stable_baselines3.common.vec_env.base_vec_env import (
     VecEnv,
     VecEnvWrapper,
 )
-from schola.core.utils import ScholaModel
+from schola.core.model import ScholaModel
 from gymnasium.spaces import Box, flatdim
 import stable_baselines3 as sb3
 
@@ -48,6 +48,7 @@ import stable_baselines3 as sb3
 
 # Modifications Copyright (c) 2023-2025 Advanced Micro Devices, Inc. All Rights Reserved.
 
+
 class SB3ScholaModel(ScholaModel):
     """
     A PyTorch Module that wraps a stable baselines policy and extracts the necessary components to export to ONNX.
@@ -63,72 +64,69 @@ class SB3ScholaModel(ScholaModel):
     ----------
     extractor : _CombinedExtractorWrapper
         The wrapped feature extractor.
-    
+
     action_net : th.nn.Module
         The wrapped action network.
     """
 
-    def __init__(
-        self,
-        policy,
-        action_space
-    ):
+    def __init__(self, policy, action_space):
         super().__init__()
         self.action_space = action_space
         self.policy = policy
         self.policy.set_training_mode(False)
 
+    def get_logits(self, x) -> th.Tensor: ...
 
-    def get_logits(self, x) -> th.Tensor:
-        ...
-    
     def forward(self, *args) -> Tuple[th.Tensor, th.Tensor]:
         state = args[-1]
         x = args[:-1]
-        
+
         tensor_dict = {}
-        for i,key in enumerate(self.policy.observation_space):
+        for i, key in enumerate(self.policy.observation_space):
             tensor_dict[key] = x[i]
         logits = self.get_logits(tensor_dict)
-        curr_dim=0
+        curr_dim = 0
         outputs = []
         for space_name, space in self.action_space.items():
             space_size = flatdim(space)
-            outputs.append(logits[:,curr_dim:curr_dim + space_size])
-            curr_dim+=space_size
+            outputs.append(logits[:, curr_dim : curr_dim + space_size])
+            curr_dim += space_size
         outputs.append(state)
         # For non-RNN policies, the state calculation is a no-op
         return tuple(outputs)
-    
-    def save_as_onnx(self, export_path: str, onnx_opset:int = 17) -> None:
+
+    def save_as_onnx(self, export_path: str, onnx_opset: int = 17) -> None:
         # For non-RNN policies, the state is not used values are set to arbitrary dummy values
         seq_len = 1
         state_dim = 1
-        #Use the unwrapped action space here so that we output in a nice dictionary format
+        # Use the unwrapped action space here so that we output in a nice dictionary format
 
         # make directories if they don't exist
         dir_path = Path(export_path).parent
         dir_path.mkdir(parents=True, exist_ok=True)
-        
+
         input_names = []
         inputs = []
-        assert(isinstance(self.policy.observation_space, gym.spaces.Dict), "Top Level Observation Space must be a Dict")
+        assert (
+            isinstance(self.policy.observation_space, gym.spaces.Dict),
+            "Top Level Observation Space must be a Dict",
+        )
 
-        if(not isinstance(self.policy.action_space, gym.spaces.Dict)):
+        if not isinstance(self.policy.action_space, gym.spaces.Dict):
             output_names = ["action"]
         else:
-            output_names = [k for k,v in self.action_space.spaces.items() ]
+            output_names = [k for k, v in self.action_space.spaces.items()]
 
-        #Output is flattened so we only ever output 2 items
+        # Output is flattened so we only ever output 2 items
         output_names += ["state_out"]
 
         for obs_space_name, obs_space in self.policy.observation_space.spaces.items():
             input_names.append(obs_space_name)
-            #Just flatten discrete and boolean spaces
-            if(not isinstance(obs_space, gym.spaces.Box)):
+            # Just flatten discrete and boolean spaces
+            if not isinstance(obs_space, gym.spaces.Box):
                 obs_space = gym.spaces.utils.flatten_space(obs_space)
-            inputs.append(th.rand(1,*obs_space.shape))
-        
+            inputs.append(th.rand(1, *obs_space.shape))
+
         # add the state input
         input_names.append("state_in")
         inputs.append(th.rand((1, seq_len, state_dim)))
@@ -147,18 +145,24 @@ class SB3ScholaModel(ScholaModel):
             )
         print("Model exported to ONNX")
 
+
 class SB3PPOModel(SB3ScholaModel):
-    
+
     def get_logits(self, x):
         x = self.policy.features_extractor(x)
-        x,_ = self.policy.mlp_extractor(x)
+        x, _ = self.policy.mlp_extractor(x)
         x = self.policy.action_net(x)
         return x
 
+
 # A2C and PPO share the same policies
-class SB3A2CModel(SB3PPOModel):
-    ...
-    
+class SB3A2CModel(SB3PPOModel): ...
+
+
+# All possible policies for BC share the same policies
+class SB3BCModel(SB3PPOModel): ...
+
+
 class SB3SACModel(SB3ScholaModel):
 
     def get_logits(self, x):
@@ -167,22 +171,25 @@ class SB3SACModel(SB3ScholaModel):
         x = self.policy.actor.mu(x)
         return x
 
+
 class SB3TD3Model(SB3ScholaModel):
-    
+
     def get_logits(self, x):
         x = self.policy.actor.features_extractor(x)
         x = self.policy.actor.mu(x)
         return x
 
+
 # DDPG and TD3 share the same policies
-class SB3DDPGModel(SB3TD3Model):
-    ...
+class SB3DDPGModel(SB3TD3Model): ...
+
 
 class SB3DQNModel(SB3ScholaModel):
-    
+
     def get_logits(self, x):
         x = self.policy.q_net(x)
         return x
+
 
 def get_scholasb3_model(model: BaseAlgorithm) -> ScholaModel:
     """
@@ -196,7 +203,7 @@ def get_scholasb3_model(model: BaseAlgorithm) -> ScholaModel:
     Returns
     -------
     ScholaModel
-        The ScholaModel for the given model. 
+        The ScholaModel for the given model.
     """
     if isinstance(model, sb3.PPO):
         return SB3PPOModel(model.policy, model.__original_action_space)
@@ -228,6 +235,7 @@ def save_model_as_onnx(model: BaseAlgorithm, export_path: str) -> None:
     """
     model = get_scholasb3_model(model)
     model.save_as_onnx(export_path)
+
 
 def convert_ckpt_to_onnx_for_unreal(
     trainer=PPO,
@@ -289,6 +297,39 @@ except ImportError:
     # matplot lib is not installed, raise a lazy error if someone tries to use the RenderImagesWrapper
     plt = None
 
+
+class VecMergeDictObservationWrapper(VecEnvWrapper):
+    """
+    A vectorized wrapper for merging a dictionary of actions into 1 single action.
+    All actions in the dictionary must be of compatible types.
+
+    Parameters
+    ----------
+    venv : VecEnv
+        The vectorized environment being wrapped.
+    """
+
+    def __init__(self, venv: VecEnv):
+        all_observation_spaces = list(venv.observation_space.spaces.values())
+        assert len(all_observation_spaces) > 0, "No Observation Spaces to merge."
+        observation_space = all_observation_spaces[0].merge(*all_observation_spaces)
+        super().__init__(venv=venv, observation_space=observation_space)
+
+    def reset(self) -> VecEnvObs:
+        return self.venv.reset()
+
+    def step(
+        self, action: np.ndarray
+    ) -> Tuple[VecEnvObs, np.ndarray, np.ndarray, List[Dict]]:
+        return self.venv.step(action)
+
+    def step_async(self, actions: np.ndarray) -> None:
+        self.venv.step_async(actions)
+
+    def step_wait(self) -> Tuple[VecEnvObs, np.ndarray, np.ndarray, List[Dict]]:
+        return self.venv.step_wait()
+
+
 class RenderImagesWrapper(VecEnvWrapper):
     """
     Renders image observations to an interactive matplotlib window. It assumes that the observations are square RGB images, and attempts to reshape any box observation to 3xLxL.
@@ -300,32 +341,38 @@ class RenderImagesWrapper(VecEnvWrapper):
     """
 
     def __init__(self, venv: VecEnv):
-        if(plt is None):
-            raise ImportError("You must install matplotlib in order to use the RenderImagesWrapper.")
+        if plt is None:
+            raise ImportError(
+                "You must install matplotlib in order to use the RenderImagesWrapper."
+            )
         self.image_obs = []
         self._num_envs = venv.num_envs
         for obs_space_name, obs_space in venv.observation_space.spaces.items():
-            if isinstance(obs_space,gym.spaces.Box):
-                  self.image_obs.append((obs_space_name,obs_space.shape))
+            if isinstance(obs_space, gym.spaces.Box):
+                self.image_obs.append((obs_space_name, obs_space.shape))
         plt.ion()
         self.axs = []
         self.ims = [[] for _ in range(self._num_envs)]
         for row in range(self._num_envs):
             for col in range(len(self.image_obs)):
-                #Note index starts at 1
-                index = row*len(self.image_obs)+col+1
+                # Note index starts at 1
+                index = row * len(self.image_obs) + col + 1
                 self.axs.append(plt.subplot(self._num_envs, len(self.image_obs), index))
-                #TODO dynamically toggle greyscale
-                if(obs_space.shape[0] == 1):
+                # TODO dynamically toggle greyscale
+                if obs_space.shape[0] == 1:
                     cmap = "grey"
                 else:
-                    cmap=None
+                    cmap = None
                 default_ndarray = self.convert_to_plt_format(np.zeros(obs_space.shape))
-                self.ims[row].append(self.axs[index-1].imshow(default_ndarray,cmap=cmap,vmin=0.0,vmax=1.0))
+                self.ims[row].append(
+                    self.axs[index - 1].imshow(
+                        default_ndarray, cmap=cmap, vmin=0.0, vmax=1.0
+                    )
+                )
 
         super().__init__(venv=venv)
 
-    def convert_to_plt_format(self, obs:np.ndarray) -> np.ndarray:
+    def convert_to_plt_format(self, obs: np.ndarray) -> np.ndarray:
         """
         Convert to a format supported by matplotlib. (e.g. (W,H), (W,H,3), and (W,H,4)). No Chanels or Chanels last, from Chanels first.
 
@@ -333,16 +380,16 @@ class RenderImagesWrapper(VecEnvWrapper):
         ----------
         obs : np.ndarray
             The observation to convert.
-        
+
         Returns
         -------
         np.ndarray
             The converted observation.
         """
-        if(obs.shape[0] == 1):
+        if obs.shape[0] == 1:
             return obs.squeeze()
         else:
-            return obs.transpose(1,2,0)
+            return obs.transpose(1, 2, 0)
 
     def close(self):
         super().close()
@@ -352,7 +399,7 @@ class RenderImagesWrapper(VecEnvWrapper):
     def update_images(self, obs: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
         """
         Updates the images in the plt window with the given observations.
-        
+
         Parameters
         ----------
         obs: Dict[str,np.ndarray]
@@ -361,29 +408,30 @@ class RenderImagesWrapper(VecEnvWrapper):
         Returns
         -------
         Dict[str,np.ndarray]
-            The original observation.        
+            The original observation.
         """
-        for col,(image_obs_name,shape) in enumerate(self.image_obs):
-            temp_obs = np.clip(obs[image_obs_name],0.,1.)
+        for col, (image_obs_name, shape) in enumerate(self.image_obs):
+            temp_obs = np.clip(obs[image_obs_name], 0.0, 1.0)
             # yoink out the batch dim at the front of the buffer
             for row in range(temp_obs.shape[0]):
                 new_data = self.convert_to_plt_format(temp_obs[row])
                 self.ims[row][col].set_data(new_data)
-        plt.pause(.001)
-   
+        plt.pause(0.001)
+
         return obs
 
     def reset(self) -> VecEnvObs:
         return self.update_images(self.venv.reset())
 
-
-    def step(self, action: np.ndarray) -> Tuple[VecEnvObs, np.ndarray, np.ndarray, List[Dict]]:
+    def step(
+        self, action: np.ndarray
+    ) -> Tuple[VecEnvObs, np.ndarray, np.ndarray, List[Dict]]:
 
         obs, rewards, dones, infos = self.venv.step(action)
         return self.update_images(obs), rewards, dones, infos
 
     def step_async(self, actions: np.ndarray) -> None:
-        self.venv.step_async(actions) 
+        self.venv.step_async(actions)
 
     def step_wait(self) -> Tuple[VecEnvObs, np.ndarray, np.ndarray, List[Dict]]:
         obs, rewards, dones, infos = self.venv.step_wait()

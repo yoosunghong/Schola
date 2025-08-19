@@ -6,20 +6,18 @@
 #include "Common/Points/PointVisitor.h"
 #include "BinaryPoint.generated.h"
 
-
 USTRUCT(BlueprintType)
 struct SCHOLA_API FBinaryPoint : public FPoint
 {
 	GENERATED_BODY()
 	/** the values of this point */
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category="Point")
+	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Point")
 	TArray<bool> Values;
 	/**
 	 * @brief Construct an empty BinaryPoint
 	 */
 	FBinaryPoint()
 	{
-
 	}
 
 	/**
@@ -29,7 +27,6 @@ struct SCHOLA_API FBinaryPoint : public FPoint
 	FBinaryPoint(TArray<bool>& InitialValues)
 		: Values(InitialValues)
 	{
-
 	}
 
 	/**
@@ -40,11 +37,9 @@ struct SCHOLA_API FBinaryPoint : public FPoint
 	FBinaryPoint(const bool* Data, int Num)
 		: Values(Data, Num)
 	{
-
 	}
 
-
-	virtual ~FBinaryPoint(){};
+	virtual ~FBinaryPoint() {};
 	/**
 	 * @brief Get the value of the BinaryPoint at the given index or dimension
 	 * @param[in] Index The dimension to get the value at
@@ -72,8 +67,23 @@ struct SCHOLA_API FBinaryPoint : public FPoint
 	{
 		this->Values.Reset(Values.Num());
 	}
-	
+
 	void Accept(PointVisitor& Visitor) override;
 
 	void Accept(ConstPointVisitor& Visitor) const override;
+
+	/**
+	 * @brief Convert this point to a string representation
+	 * @return A string representation of this point
+	 */
+
+	FString ToString() const override
+	{
+		FString Result = TEXT("BinaryPoint: ");
+		for (int i = 0; i < this->Values.Num(); i++)
+		{
+			Result += FString::Printf(TEXT("%d "), this->Values[i]);
+		}
+		return Result;
+	}
 };
