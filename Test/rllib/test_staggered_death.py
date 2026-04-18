@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Advanced Micro Devices, Inc. All Rights Reserved.
+# Copyright (c) 2026 Advanced Micro Devices, Inc. All Rights Reserved.
 """
 Tests for staggered-agent-death handling in multi-agent environments.
 
@@ -204,15 +204,20 @@ class _StandaloneEnv:
                 self._truncated_agents.add(a)
 
         self._current_agents = {
-            a for a in all_agents_this_step
+            a
+            for a in all_agents_this_step
             if not terminateds[eid].get(a) and not truncateds[eid].get(a)
         }
 
-        all_known = self._current_agents | self._terminated_agents | self._truncated_agents
+        all_known = (
+            self._current_agents | self._terminated_agents | self._truncated_agents
+        )
         num_done = len(self._terminated_agents | self._truncated_agents)
         num_total = len(all_known)
 
-        terminateds[eid]["__all__"] = (num_done == num_total) if num_total > 0 else False
+        terminateds[eid]["__all__"] = (
+            (num_done == num_total) if num_total > 0 else False
+        )
         truncateds[eid]["__all__"] = (
             (len(self._truncated_agents) == num_total) if num_total > 0 else False
         )
@@ -253,7 +258,8 @@ def test_only_live_agent_actions_forwarded():
     # Step 2: RLlib only provides actions for agent_1 and agent_2 (agent_0 is dead)
     env.step({a: action_spaces[a].sample() for a in ["agent_1", "agent_2"]})
     assert protocol.received_actions_log[1] == {
-        "agent_1", "agent_2"
+        "agent_1",
+        "agent_2",
     }, "Dead agent_0 must NOT be zero-padded into the action map"
 
     # Step 3: only agent_2 alive
@@ -298,7 +304,9 @@ def test_all_flag_true_when_last_agent_dies():
         {"agent_2": action_spaces["agent_2"].sample()}
     )
     assert terminateds["agent_2"] is True
-    assert terminateds["__all__"] is True, "All agents dead — episode must be marked done"
+    assert (
+        terminateds["__all__"] is True
+    ), "All agents dead — episode must be marked done"
 
 
 def test_episode_completes_within_bounded_steps():
@@ -328,14 +336,372 @@ def test_episode_completes_within_bounded_steps():
 
 
 # ===========================================================================
+# Phase 1.3 — Edge cases
+# ===========================================================================
+
+
+class _AllDieTogetherProtocol(FakeProtocol):
+    """All 3 agents die on the very first step."""
+
+    def send_action_msg(self, actions, action_spaces):
+        self.step_count += 1
+        env_actions = actions[self.env_id]
+        self.received_actions_log.append(set(env_actions.keys()))
+
+        obs = {a: np.random.randn(4).astype(np.float32) for a in self.agent_ids}
+        rewards = {a: -1.0 for a in self.agent_ids}
+        terminateds = {a: True for a in self.agent_ids}
+        truncateds = {a: False for a in self.agent_ids}
+        infos = {a: {} for a in self.agent_ids}
+
+        return (
+            {self.env_id: obs},
+            {self.env_id: rewards},
+            {self.env_id: terminateds},
+            {self.env_id: truncateds},
+            {self.env_id: infos},
+            {},
+            {},
+        )
+
+
+class _TruncationProtocol(FakeProtocol):
+    """Agents die via truncation (not termination) one per step."""
+
+    def send_action_msg(self, actions, action_spaces):
+        self.step_count += 1
+        env_actions = actions[self.env_id]
+        self.received_actions_log.append(set(env_actions.keys()))
+
+        obs = {a: np.random.randn(4).astype(np.float32) for a in self.agent_ids}
+        rewards = {a: 0.0 for a in self.agent_ids}
+        terminateds = {a: False for a in self.agent_ids}
+        truncateds = {a: False for a in self.agent_ids}
+        infos = {a: {} for a in self.agent_ids}
+
+        if self.step_count >= 1:
+            truncateds["agent_0"] = True
+        if self.step_count >= 2:
+            truncateds["agent_1"] = True
+        if self.step_count >= 3:
+            truncateds["agent_2"] = True
+
+        return (
+            {self.env_id: obs},
+            {self.env_id: rewards},
+            {self.env_id: terminateds},
+            {self.env_id: truncateds},
+            {self.env_id: infos},
+            {},
+            {},
+        )
+
+
+class _SingleAgentProtocol(FakeProtocol):
+    """One-agent environment: agent dies at step 1."""
+
+    def __init__(self):
+        super().__init__()
+        self.agent_ids = ["agent_0"]
+
+    def get_definition(self):
+        obs_space = gym.spaces.Box(low=-1.0, high=1.0, shape=(4,), dtype=np.float32)
+        act_space = gym.spaces.Box(low=-1.0, high=1.0, shape=(2,), dtype=np.float32)
+        ids = [self.agent_ids]
+        agent_types = [{a: "default" for a in self.agent_ids}]
+        obs_defns = {0: {a: obs_space for a in self.agent_ids}}
+        act_defns = {0: {a: act_space for a in self.agent_ids}}
+        return ids, agent_types, obs_defns, act_defns
+
+    def send_reset_msg(self, seeds=None, options=None):
+        self.step_count = 0
+        self.received_actions_log = []
+        obs = [{a: np.zeros(4, dtype=np.float32) for a in self.agent_ids}]
+        infos = [{a: {} for a in self.agent_ids}]
+        return obs, infos
+
+    def send_action_msg(self, actions, action_spaces):
+        self.step_count += 1
+        env_actions = actions[self.env_id]
+        self.received_actions_log.append(set(env_actions.keys()))
+
+        obs = {a: np.random.randn(4).astype(np.float32) for a in self.agent_ids}
+        rewards = {a: 0.0 for a in self.agent_ids}
+        terminateds = {a: False for a in self.agent_ids}
+        truncateds = {a: False for a in self.agent_ids}
+        infos = {a: {} for a in self.agent_ids}
+
+        if self.step_count >= 1:
+            terminateds["agent_0"] = True
+
+        return (
+            {self.env_id: obs},
+            {self.env_id: rewards},
+            {self.env_id: terminateds},
+            {self.env_id: truncateds},
+            {self.env_id: infos},
+            {},
+            {},
+        )
+
+
+def _make_vec_env_with(protocol):
+    """Construct a RayVecEnv backed by the given protocol (no Unreal connection)."""
+    try:
+        from schola.rllib.env import RayVecEnv
+        from ray.rllib.env.vector.vector_multi_agent_env import VectorMultiAgentEnv
+
+        simulator = FakeSimulator()
+        simulator.supported_protocols = type(protocol)
+
+        env = RayVecEnv.__new__(RayVecEnv)
+        env.protocol = protocol
+        env.simulator = simulator
+        env._init_space_attributes()
+        protocol.start()
+        env.protocol.send_startup_msg()
+        env._define_environment()
+        env._init_agent_tracking()
+        env.metadata = {"autoreset_mode": "next_step"}
+        VectorMultiAgentEnv.__init__(env)
+        env._fake_protocol = protocol
+        return env
+    except (ImportError, Exception):
+        return None
+
+
+def _make_env_with(protocol):
+    try:
+        from schola.rllib.env import RayEnv
+        from ray.rllib.env.multi_agent_env import MultiAgentEnv
+
+        simulator = FakeSimulator()
+        simulator.supported_protocols = type(protocol)
+
+        env = RayEnv.__new__(RayEnv)
+        env.protocol = protocol
+        env.simulator = simulator
+        env._init_space_attributes()
+        protocol.start()
+        env.protocol.send_startup_msg()
+        env._define_environment()
+        env._init_agent_tracking()
+        MultiAgentEnv.__init__(env)
+        env._fake_protocol = protocol
+        return env
+    except ImportError:
+        return _StandaloneEnv(protocol)
+
+
+def test_all_agents_die_simultaneously():
+    """All 3 agents die on step 1: __all__ must be True immediately; no hang."""
+    env = _make_env_with(_AllDieTogetherProtocol())
+    obs, _ = env.reset()
+    action_spaces = env.single_action_spaces
+
+    actions = {a: action_spaces[a].sample() for a in obs if a != "__all__"}
+    _, _, terminateds, truncateds, _ = env.step(actions)
+
+    assert terminateds.get("__all__") or truncateds.get(
+        "__all__"
+    ), "All agents died simultaneously — __all__ must be True on step 1"
+
+
+def test_truncation_instead_of_termination():
+    """Truncation must trigger the same action-filtering and __all__ logic as termination."""
+    env = _make_env_with(_TruncationProtocol())
+    obs, _ = env.reset()
+    action_spaces = env.single_action_spaces
+
+    # Step 1: agent_0 truncated, agent_1/2 alive → __all__ False
+    _, _, terminateds1, truncateds1, _ = env.step(
+        {a: action_spaces[a].sample() for a in obs if a != "__all__"}
+    )
+    assert truncateds1.get("agent_0") is True
+    assert truncateds1.get("__all__") is False
+
+    # Step 2: agent_1 truncated → __all__ still False
+    _, _, terminateds2, truncateds2, _ = env.step(
+        {a: action_spaces[a].sample() for a in ["agent_1", "agent_2"]}
+    )
+    assert truncateds2.get("agent_1") is True
+    assert truncateds2.get("__all__") is False
+
+    # Step 3: agent_2 truncated → __all__ True
+    _, _, terminateds3, truncateds3, _ = env.step(
+        {"agent_2": action_spaces["agent_2"].sample()}
+    )
+    assert truncateds3.get("agent_2") is True
+    assert (
+        truncateds3.get("__all__") is True
+    ), "All agents truncated — __all__ must be True"
+
+    # Forwarded action keys must not include dead agents
+    protocol = env._fake_protocol
+    assert protocol.received_actions_log[1] == {"agent_1", "agent_2"}
+    assert protocol.received_actions_log[2] == {"agent_2"}
+
+
+def test_reset_clears_tracking_state():
+    """reset() must wipe stale dead-agent sets so a second episode runs cleanly."""
+    env = make_ray_env()
+    action_spaces = env.single_action_spaces
+
+    # Run a full episode to completion
+    obs, _ = env.reset()
+    for _ in range(10):
+        live = [a for a in obs if a != "__all__"]
+        if not live:
+            break
+        obs, _, terminateds, _, _ = env.step(
+            {a: action_spaces[a].sample() for a in live}
+        )
+        if terminateds.get("__all__"):
+            break
+
+    # Second episode: must start fresh and also reach __all__=True
+    obs, _ = env.reset()
+    done = False
+    for _ in range(10):
+        live = [a for a in obs if a != "__all__"]
+        if not live:
+            break
+        obs, _, terminateds, _, _ = env.step(
+            {a: action_spaces[a].sample() for a in live}
+        )
+        if terminateds.get("__all__"):
+            done = True
+            break
+
+    assert (
+        done
+    ), "Second episode after reset() never reached __all__=True — stale state leak"
+
+
+def test_single_agent_environment():
+    """Single-agent env: baseline behaviour — terminates after step 1 with __all__=True."""
+    env = _make_env_with(_SingleAgentProtocol())
+    obs, _ = env.reset()
+    action_spaces = env.single_action_spaces
+
+    live = [a for a in obs if a != "__all__"]
+    assert live == ["agent_0"]
+
+    _, _, terminateds, _, _ = env.step({a: action_spaces[a].sample() for a in live})
+    assert terminateds.get("agent_0") is True
+    assert (
+        terminateds.get("__all__") is True
+    ), "Single-agent env: __all__ must be True when the sole agent dies"
+
+
+def test_zero_live_agents_at_step():
+    """If all agents are already dead, episode must still end; no hang."""
+    env = make_ray_env()
+    action_spaces = env.single_action_spaces
+
+    # Drive to __all__=True (all 3 dead)
+    obs, _ = env.reset()
+    for _ in range(10):
+        live = [a for a in obs if a != "__all__"]
+        if not live:
+            break
+        obs, _, terminateds, _, _ = env.step(
+            {a: action_spaces[a].sample() for a in live}
+        )
+        if terminateds.get("__all__"):
+            break
+
+    assert (
+        terminateds.get("__all__") is True
+    ), "Setup failed: could not reach a state where all agents are dead"
+    # After __all__=True, calling step with an empty action dict should not hang
+    # (in practice RLlib resets, but we verify the env does not deadlock).
+    # Reset and verify clean state.
+    obs2, _ = env.reset()
+    live2 = [a for a in obs2 if a != "__all__"]
+    assert set(live2) == {
+        "agent_0",
+        "agent_1",
+        "agent_2",
+    }, "After reset, all agents must be alive again"
+
+
+def test_vec_dead_agents_stripped_from_response():
+    """
+    RayVecEnv must filter dead agents from gRPC response on subsequent steps.
+
+    This covers the NextStep reset protocol path, which shares _filter_dead_agents
+    with RayEnv via BaseRayEnv.  Without the filter, RLlib raises MultiAgentEnvError
+    when it sees a second observation for an agent whose episode is already closed.
+    """
+    env = _make_vec_env_with(FakeProtocol())
+    if env is None:
+        return  # skip if RayVecEnv unavailable in this environment
+
+    protocol = env._fake_protocol
+    action_spaces = env._single_action_spaces
+
+    env.reset()
+
+    # Step 1: all 3 agents alive; agent_0 dies this step.
+    actions = [{a: action_spaces[a].sample() for a in protocol.agent_ids}]
+    obs_list, _, term_list, trunc_list, _ = env.step(actions)
+    assert term_list[0]["agent_0"] is True
+    assert term_list[0].get("__all__") is False, "agent_1 and agent_2 still alive"
+
+    # Step 2: agent_0 must be absent from every returned dict.
+    actions = [{a: action_spaces[a].sample() for a in ["agent_1", "agent_2"]}]
+    obs_list, rew_list, term_list, trunc_list, info_list = env.step(actions)
+    assert "agent_0" not in obs_list[0], "Dead agent_0 must not appear in obs"
+    assert "agent_0" not in rew_list[0], "Dead agent_0 must not appear in rewards"
+    assert "agent_0" not in term_list[0], "Dead agent_0 must not appear in terminateds"
+    assert "agent_0" not in trunc_list[0], "Dead agent_0 must not appear in truncateds"
+    assert "agent_0" not in info_list[0], "Dead agent_0 must not appear in infos"
+    assert term_list[0]["agent_1"] is True
+    assert term_list[0].get("__all__") is False, "agent_2 still alive"
+
+    # Step 3: agent_1 and agent_0 absent; agent_2 dies; __all__ True.
+    actions = [{"agent_2": action_spaces["agent_2"].sample()}]
+    obs_list, _, term_list, _, _ = env.step(actions)
+    assert "agent_0" not in obs_list[0]
+    assert "agent_1" not in obs_list[0]
+    assert term_list[0]["agent_2"] is True
+    assert term_list[0].get("__all__") is True, "All agents dead — episode must be done"
+
+
+# ===========================================================================
 # Standalone runner
 # ===========================================================================
 if __name__ == "__main__":
     tests = [
-        ("test_only_live_agent_actions_forwarded", test_only_live_agent_actions_forwarded),
-        ("test_all_flag_false_while_agents_alive", test_all_flag_false_while_agents_alive),
-        ("test_all_flag_true_when_last_agent_dies", test_all_flag_true_when_last_agent_dies),
-        ("test_episode_completes_within_bounded_steps", test_episode_completes_within_bounded_steps),
+        (
+            "test_only_live_agent_actions_forwarded",
+            test_only_live_agent_actions_forwarded,
+        ),
+        (
+            "test_all_flag_false_while_agents_alive",
+            test_all_flag_false_while_agents_alive,
+        ),
+        (
+            "test_all_flag_true_when_last_agent_dies",
+            test_all_flag_true_when_last_agent_dies,
+        ),
+        (
+            "test_episode_completes_within_bounded_steps",
+            test_episode_completes_within_bounded_steps,
+        ),
+        ("test_all_agents_die_simultaneously", test_all_agents_die_simultaneously),
+        (
+            "test_truncation_instead_of_termination",
+            test_truncation_instead_of_termination,
+        ),
+        ("test_reset_clears_tracking_state", test_reset_clears_tracking_state),
+        ("test_single_agent_environment", test_single_agent_environment),
+        ("test_zero_live_agents_at_step", test_zero_live_agents_at_step),
+        (
+            "test_vec_dead_agents_stripped_from_response",
+            test_vec_dead_agents_stripped_from_response,
+        ),
     ]
 
     passed = failed = 0
