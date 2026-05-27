@@ -46,7 +46,7 @@ Build before tests
 
 Controlled by ``build_unreal`` in ``pytest.ini``, or ``--build-unreal`` / ``--no-build-unreal``. When enabled, Schola triggers an Unreal Build Tool (UBT) build for the host project before launching the editor.
 
-Example (Schola under ``Plugins/Schola``, only C++ tests under ``Source``—similar to CI):
+Example (Schola under ``Plugins/Schola``, only C++ tests under ``Source``):
 
 .. code-block:: bash
 

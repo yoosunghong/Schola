@@ -120,7 +120,7 @@ Requirements:
 - The **Unreal Editor** for that engine, resolved from `engine_path` / `--engine-path` (see `pytest.ini` or CLI).
 - Optional **one-step build** before tests: `build_unreal = true` in `pytest.ini`, or pass `--build-unreal`, or skip with `--no-build-unreal`.
 
-Typical invocation (plugin embedded under `Plugins/Schola`, tests only under `Source`—mirrors CI):
+Typical invocation (plugin embedded under `Plugins/Schola`, tests only under `Source`):
 
 ```bash
 python -m pytest ./Source --rootdir=./Source --import-mode=importlib -n 0 \
