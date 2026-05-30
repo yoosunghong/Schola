@@ -133,19 +133,21 @@ public:
 	 */
 	void Step(const TMap<FString, TInstancedStruct<FPoint>>& InActions, TMap<FString, FAgentState>& OutAgentStates) override
 	{
-		// Snapshot previously-dead agents before stepping.
+		// Snapshot previously-dead agents before stepping, but only when the
+		// trainer did not send an action for them. SameStep auto-reset makes a
+		// previously terminal agent live again on the next step.
 		TMap<FString, FAgentState> DeadAgentStates;
 		for (const auto& Pair : OutAgentStates)
 		{
-			if (Pair.Value.bTerminated || Pair.Value.bTruncated)
+			if ((Pair.Value.bTerminated || Pair.Value.bTruncated) && !InActions.Contains(Pair.Key))
 			{
 				DeadAgentStates.Add(Pair.Key, Pair.Value);
 			}
 		}
 
 		// Build a filtered action map that excludes dead agents. Python only sends
-		// actions for live agents, but this guard also prevents any accidental
-		// dead-agent entry from reaching Execute_Step.
+		// actions for live agents, so an action for a previously terminal agent
+		// means the agent has been reset and should be stepped again.
 		TMap<FString, TInstancedStruct<FPoint>> LiveActions;
 		for (const auto& ActionPair : InActions)
 		{
